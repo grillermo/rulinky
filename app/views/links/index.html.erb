@@ -1,0 +1,67 @@
+<main class="min-h-screen bg-gray-100 text-gray-900 font-sans p-4 flex flex-col items-center">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+    <header class="text-center justify-center">
+      <img
+        src="/logo.png"
+        alt="Link Saver Logo"
+        width="120"
+        height="40"
+        class="h-auto w-auto inline-block"
+      />
+    </header>
+
+    <div>
+      <div class="flex p-1 bg-gray-100 rounded-lg mb-6 top-2 z-10 backdrop-blur-sm">
+        <a
+          href="/"
+          class="flex-1 py-2 text-sm font-medium rounded-md transition-all hover:cursor-pointer <%= @filter == 'unread' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700' %>"
+        >
+          Unread <%= @unread_links_count %>
+        </a>
+        <a
+          href="/?filter=read"
+          class="flex-1 py-2 text-sm font-medium rounded-md transition-all hover:cursor-pointer <%= @filter == 'read' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700' %>"
+        >
+          Read <%= @read_links_count %>
+        </a>
+      </div>
+
+      <div class="space-y-1 min-h-[50vh]">
+        <% if @filtered_links.empty? %>
+          <div class="text-center py-12 text-gray-500">
+            <p>No links found.</p>
+          </div>
+        <% else %>
+          <% @filtered_links.each do |link| %>
+            <% read = link.read.to_i == 1 %>
+            <a
+              href="<%= link.url %>"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-link-id="<%= link.id %>"
+              data-link-read="<%= read ? 1 : 0 %>"
+              class="block p-4 mb-3 rounded-xl border border-blue-200 transition-all active:scale-[0.98] cursor-pointer text-inherit no-underline hover:cursor-pointer <%= read ? 'bg-gray-100 opacity-60' : '' %>"
+            >
+              <div class="flex justify-between items-start gap-3">
+                <div class="flex-1 overflow-hidden">
+                  <h3 class="text-lg font-medium text-gray-900 truncate">
+                    <%= (link.note.to_s.strip == "" ? link.url : link.note) %>
+                  </h3>
+                  <p class="text-sm text-gray-500 truncate mt-1 font-mono">
+                    <%= link.url %>
+                  </p>
+                </div>
+                <% unless read %>
+                  <span class="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mt-2" title="Unread"></span>
+                <% end %>
+              </div>
+              <div class="mt-2 text-xs text-gray-400">
+                <%= ms_to_local_time_string(link.updated_at) %>
+              </div>
+            </a>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</main>

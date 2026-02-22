@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Rulinky" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Rulinky">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag "application" %>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="rulinky-auth-token" content="<%= ENV["NEXT_PUBLIC_AUTH_TOKEN"].presence || ENV["AUTH_TOKEN"].to_s %>">
+  </head>
+
+  <body class="antialiased">
+    <%= yield %>
+
+    <script>
+      (function () {
+        function authToken() {
+          var meta = document.querySelector('meta[name="rulinky-auth-token"]');
+          return (meta && meta.getAttribute('content')) || '';
+        }
+
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[data-link-id]') : null;
+          if (!a) return;
+
+          var isRead = a.getAttribute('data-link-read') === '1';
+          if (isRead) return;
+
+          a.setAttribute('data-link-read', '1');
+          a.classList.add('bg-gray-100', 'opacity-60');
+
+          var token = authToken();
+          if (!token) return;
+
+          fetch('/api/links', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token
+            },
+            body: JSON.stringify({ id: a.getAttribute('data-link-id'), read: true }),
+            keepalive: true
+          }).catch(function () {});
+        }, { capture: true });
+      })();
+    </script>
+  </body>
+</html>
