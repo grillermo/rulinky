@@ -1,0 +1,4 @@
+#!/Users/grillermo/.rbenv/shims/ruby
+require_relative "../config/boot"
+require "rake"
+Rake.application.run

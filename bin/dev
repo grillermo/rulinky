@@ -1,0 +1,2 @@
+#!/Users/grillermo/.rbenv/shims/ruby
+exec "./bin/rails", "server", *ARGV
