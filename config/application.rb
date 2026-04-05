@@ -38,5 +38,7 @@ module Rulinky
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    config.hosts << "eslabony.chiq.me"
   end
 end
