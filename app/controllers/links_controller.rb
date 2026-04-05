@@ -17,4 +17,20 @@ class LinksController < ApplicationController
         @links.select { |link| link.read.to_i == 0 }
       end
   end
+
+  def destroy
+    link = Link.find_by(id: params[:id])
+    link&.destroy
+    
+    redirect_to root_path
+  end
+
+  def unread
+    link = Link.find_by(id: params[:id])
+    if link
+      link.update!(read: 0, updated_at: (Time.now.to_f * 1000).to_i)
+    end
+    
+    redirect_back(fallback_location: root_path(filter: "read"))
+  end
 end
