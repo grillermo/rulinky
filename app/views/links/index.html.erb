@@ -43,13 +43,10 @@
               class="block p-4 mb-3 rounded-xl border border-blue-200 transition-all active:scale-[0.98] cursor-pointer text-inherit no-underline hover:cursor-pointer <%= read ? 'bg-gray-100 opacity-60' : '' %>"
             >
               <div class="flex justify-between items-start gap-3">
-                <div class="flex-1 overflow-hidden">
-                  <h3 class="text-lg font-medium text-gray-900 truncate">
-                    <%= (link.note.to_s.strip == "" ? link.url : link.note) %>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-lg font-medium text-gray-900 break-all whitespace-normal">
+                    <%= display_url_without_scheme(link.url) %>
                   </h3>
-                  <p class="text-sm text-gray-500 truncate mt-1 font-mono">
-                    <%= link.url %>
-                  </p>
                 </div>
                 <div class="flex shrink-0 flex-col items-center gap-2">
                   <button

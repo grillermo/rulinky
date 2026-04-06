@@ -7,5 +7,20 @@ module LinksHelper
 
     Time.at(milliseconds / 1000.0).getlocal.strftime("%-m/%-d/%Y, %-I:%M:%S %p")
   end
-end
 
+  def display_url_without_scheme(url)
+    return "" if url.blank?
+
+    uri = URI.parse(url)
+    return url unless uri.host
+
+    host = uri.host.sub(/\Awww\./i, "")
+    formatted_url = +"#{host}"
+    formatted_url << ":#{uri.port}" if uri.port && uri.port != uri.default_port
+    formatted_url << uri.path if uri.path.present?
+    formatted_url << "##{uri.fragment}" if uri.fragment.present?
+    formatted_url
+  rescue URI::InvalidURIError
+    url.sub(/\Ahttps?:\/\/(www\.)?/i, "").sub(/\?.*\z/, "")
+  end
+end
