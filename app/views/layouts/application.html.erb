@@ -34,6 +34,19 @@
           return (meta && meta.getAttribute('content')) || '';
         }
 
+        function applyReadUi(a) {
+          a.setAttribute('data-link-read', '1');
+          a.classList.add('bg-gray-100', 'opacity-60');
+
+          var button = a.querySelector('button[data-role="toggle-read"]');
+          if (!button) return;
+
+          button.textContent = '📩';
+          button.title = 'Mark as unread';
+          button.setAttribute('aria-label', 'Mark as unread');
+          button.setAttribute('onclick', "handleUnread(event, '" + a.getAttribute('data-link-id') + "')");
+        }
+
         document.addEventListener('click', function (e) {
           var a = e.target && e.target.closest ? e.target.closest('a[data-link-id]') : null;
           if (!a) return;
@@ -41,8 +54,7 @@
           var isRead = a.getAttribute('data-link-read') === '1';
           if (isRead) return;
 
-          a.setAttribute('data-link-read', '1');
-          a.classList.add('bg-gray-100', 'opacity-60');
+          applyReadUi(a);
 
           var token = authToken();
           if (!token) return;
