@@ -21,16 +21,28 @@ class LinksController < ApplicationController
   def destroy
     link = Link.find_by(id: params[:id])
     link&.destroy
-    
+
     redirect_to root_path
   end
 
+  def read
+    update_read_status(1)
+  end
+
   def unread
+    update_read_status(0)
+  end
+
+  private
+
+  def update_read_status(read_value)
     link = Link.find_by(id: params[:id])
-    if link
-      link.update!(read: 0, updated_at: (Time.now.to_f * 1000).to_i)
+    link&.update!(read: read_value, updated_at: (Time.now.to_f * 1000).to_i)
+
+    if request.xhr?
+      head :ok
+    else
+      redirect_back(fallback_location: root_path(filter: read_value == 1 ? "unread" : "read"))
     end
-    
-    redirect_back(fallback_location: root_path(filter: "read"))
   end
 end
