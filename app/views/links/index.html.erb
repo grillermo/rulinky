@@ -83,7 +83,7 @@
   function handleDelete(event, id) {
     event.preventDefault();
     event.stopPropagation();
-    submitDeleteForm(id);
+    submitDeleteRequest(id, event.currentTarget);
   }
 
   function handleUnread(event, id) {
@@ -98,27 +98,29 @@
     submitReadForm(id, event.currentTarget);
   }
 
-  function submitDeleteForm(id) {
-    var form = document.createElement('form');
-    form.method = 'post';
-    form.action = '/links/' + id;
-    var hiddenMethod = document.createElement('input');
-    hiddenMethod.type = 'hidden';
-    hiddenMethod.name = '_method';
-    hiddenMethod.value = 'delete';
-    form.appendChild(hiddenMethod);
-    
+  function submitDeleteRequest(id, button) {
+    if (!button || button.disabled) return;
+
     var csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
-    if (csrfTokenMeta) {
-      var csrfInput = document.createElement('input');
-      csrfInput.type = 'hidden';
-      csrfInput.name = 'authenticity_token';
-      csrfInput.value = csrfTokenMeta.content;
-      form.appendChild(csrfInput);
-    }
-    
-    document.body.appendChild(form);
-    form.submit();
+    var csrfToken = csrfTokenMeta ? csrfTokenMeta.content : '';
+    var row = button.closest('a[data-link-id]');
+    if (!row) return;
+
+    button.disabled = true;
+
+    fetch('/links/' + id, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({ _method: 'delete' })
+    }).then(function (response) {
+      if (!response.ok) throw new Error('Request failed');
+      removeLinkRow(row);
+    }).catch(function () {
+      button.disabled = false;
+    });
   }
 
   function submitUnreadForm(id, button) {
@@ -179,5 +181,34 @@
 
     readCount.textContent = String(read ? readValue + 1 : Math.max(0, readValue - 1));
     unreadCount.textContent = String(read ? Math.max(0, unreadValue - 1) : unreadValue + 1);
+  }
+
+  function removeLinkRow(row) {
+    var isRead = row.getAttribute('data-link-read') === '1';
+    var readCount = document.getElementById('read-links-count');
+    var unreadCount = document.getElementById('unread-links-count');
+
+    if (readCount && unreadCount) {
+      var readValue = parseInt(readCount.textContent, 10);
+      var unreadValue = parseInt(unreadCount.textContent, 10);
+
+      if (!isNaN(readValue) && !isNaN(unreadValue)) {
+        readCount.textContent = String(isRead ? Math.max(0, readValue - 1) : readValue);
+        unreadCount.textContent = String(isRead ? unreadValue : Math.max(0, unreadValue - 1));
+      }
+    }
+
+    row.remove();
+    renderEmptyStateIfNeeded();
+  }
+
+  function renderEmptyStateIfNeeded() {
+    var list = document.querySelector('main .space-y-1');
+    if (!list) return;
+
+    var remainingRows = list.querySelectorAll('a[data-link-id]');
+    if (remainingRows.length > 0) return;
+
+    list.innerHTML = '<div class="text-center py-12 text-gray-500"><p>No links found.</p></div>';
   }
 </script>

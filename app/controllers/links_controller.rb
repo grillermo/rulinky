@@ -22,7 +22,11 @@ class LinksController < ApplicationController
     link = Link.find_by(id: params[:id])
     link&.destroy
 
-    redirect_to root_path
+    if request.xhr?
+      head :ok
+    else
+      redirect_to root_path
+    end
   end
 
   def read
