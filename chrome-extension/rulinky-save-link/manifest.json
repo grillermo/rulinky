@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Rulinky Save Link",
+  "version": "1.0.0",
+  "description": "Saves the current tab URL to Rulinky.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://rulinky.chiq.me/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "action": {
+    "default_title": "Save current page to Rulinky"
+  }
+}
