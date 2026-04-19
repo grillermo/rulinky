@@ -23,4 +23,8 @@ module LinksHelper
   rescue URI::InvalidURIError
     url.sub(/\Ahttps?:\/\/(www\.)?/i, "").sub(/\?.*\z/, "")
   end
+
+  def truncated_display_url(url, max_length: 30)
+    display_url_without_scheme(url).truncate(max_length)
+  end
 end
