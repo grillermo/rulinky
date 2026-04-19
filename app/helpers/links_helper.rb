@@ -27,4 +27,12 @@ module LinksHelper
   def truncated_display_url(url, max_length: 30)
     display_url_without_scheme(url).truncate(max_length)
   end
+
+  def link_display_title(link, max_length: 30)
+    link.display_title.to_s.truncate(max_length)
+  end
+
+  def link_display_title_full(link)
+    link.display_title
+  end
 end
