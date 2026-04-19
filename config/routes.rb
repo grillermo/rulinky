@@ -17,6 +17,7 @@ Rails.application.routes.draw do
 
   get "/api/links", to: "api/links#index"
   post "/api/links", to: "api/links#create"
+  get "/api/links/jobs/:id", to: "api/links#job_status"
   patch "/api/links", to: "api/links#update"
   delete "/api/links", to: "api/links#destroy"
 end

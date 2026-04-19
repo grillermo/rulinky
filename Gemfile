@@ -28,6 +28,7 @@ gem "bootsnap", require: false
 gem "thruster", require: false
 
 gem 'dotenv', groups: [:development, :test]
+gem "sucker_punch"
 
 gem 'csv'
 group :development, :test do
