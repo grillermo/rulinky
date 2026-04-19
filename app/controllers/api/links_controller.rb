@@ -1,18 +1,15 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "uri"
-require "cgi"
 require "securerandom"
 
 module Api
   class LinksController < ApplicationController
     skip_before_action :verify_authenticity_token
-    before_action :require_auth!, except: [:index]
+    before_action :require_auth!, except: [:index, :job_status]
 
     def index
-      links = Link.order(updated_at: :desc).select(:id, :url, :note, :read, :timestamp, :updated_at)
-      render json: links.as_json(only: %i[id url note read timestamp updated_at])
+      links = Link.order(updated_at: :desc).select(:id, :url, :note, :read, :timestamp, :updated_at, :content)
+      render json: links.map { |link| serialized_link(link) }
     rescue StandardError => e
       Rails.logger.error("Database error: #{e.class}: #{e.message}")
       render json: { error: "Internal Server Error" }, status: :internal_server_error
@@ -28,13 +25,10 @@ module Api
       end
 
       note = note.to_s
-      if note.strip == ""
-        note = fetch_title(link) || ""
-      end
 
       id = SecureRandom.uuid
       timestamp_ms = (Time.now.to_f * 1000).to_i
-      Link.create!(
+      record = Link.create!(
         id: id,
         url: link,
         note: note,
@@ -42,8 +36,17 @@ module Api
         timestamp: timestamp_ms,
         updated_at: timestamp_ms,
       )
+      job_id = SecureRandom.uuid
+      LinkContentJob.create!(id: job_id, link: record, status: "queued")
+      FetchLinkContentJob.perform_async(job_id)
 
-      render json: { message: "Link saved", id:, note: }, status: :created
+      render json: {
+        message: "Link saved",
+        id:,
+        note:,
+        job_id: job_id,
+        title: record.display_title,
+      }, status: :created
     rescue StandardError => e
       Rails.logger.error("Error saving link: #{e.class}: #{e.message}")
       render json: { error: "Internal Server Error" }, status: :internal_server_error
@@ -93,6 +96,25 @@ module Api
       render json: { error: "Internal Server Error" }, status: :internal_server_error
     end
 
+    def job_status
+      job = LinkContentJob.includes(:link).find_by(id: params[:id])
+      unless job
+        render json: { error: "Job not found" }, status: :not_found
+        return
+      end
+
+      render json: {
+        id: job.id,
+        status: job.status,
+        finished: job.finished?,
+        error: job.error_message,
+        link: serialized_link(job.link),
+      }
+    rescue StandardError => e
+      Rails.logger.error("Error loading job status: #{e.class}: #{e.message}")
+      render json: { error: "Internal Server Error" }, status: :internal_server_error
+    end
+
     private
 
     def require_auth!
@@ -105,27 +127,17 @@ module Api
       end
     end
 
-    def fetch_title(url)
-      uri = URI.parse(url)
-      return nil unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
-
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = (uri.scheme == "https")
-      http.open_timeout = 5
-      http.read_timeout = 5
-
-      req = Net::HTTP::Get.new(uri.request_uri, { "User-Agent" => "Mozilla/5.0 (compatible; Rulinky/1.0)" })
-      res = http.request(req)
-      return nil unless res.is_a?(Net::HTTPSuccess)
-
-      html = res.body.to_s
-      match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
-      return nil unless match && match[1]
-
-      CGI.unescapeHTML(match[1].strip)
-    rescue StandardError => e
-      Rails.logger.error("Error fetching title: #{e.class}: #{e.message}")
-      nil
+    def serialized_link(link)
+      {
+        id: link.id,
+        url: link.url,
+        note: link.note,
+        read: link.read,
+        timestamp: link.timestamp,
+        updated_at: link.updated_at,
+        title: link.display_title,
+        content_title: link.content_title,
+      }
     end
   end
 end

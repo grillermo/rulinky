@@ -6,7 +6,8 @@ Simple link-saver Rails app that matches the `eslabony` Next.js behavior:
 - HTML UI at `/` with Read/Unread tabs
 - JSON API at `/api/links`:
   - `GET` (no auth): list links
-  - `POST` (auth): create link; if `note` missing/blank, tries to fetch `<title>`
+  - `POST` (auth): create link and enqueue a background scrape job
+  - `GET /api/links/jobs/:id` (no auth): get the scrape job status for a link
   - `PATCH` (auth): `{ id, read: true|false }`
   - `DELETE` (auth): `{ id }`
 
@@ -17,8 +18,10 @@ Uses Ruby `3.4.7` (see `.ruby-version`).
 ## Auth token
 
 Set `NEXT_PUBLIC_AUTH_TOKEN` (or `AUTH_TOKEN`) in the environment.
+Set `FIRECRAWL_API_KEY` for general link scraping.
+Set `APIFY_API_KEY` for `x.com` / `twitter.com` links, which now use Apify's `apidojo/twitter-scraper-lite` actor.
 
-This repo includes a `.env.local` and a small loader at `config/initializers/load_env_local.rb` so `bin/rails s` will pick it up in development.
+This repo includes a `.env` / `.env.local` loader at `config/initializers/load_env_local.rb` so `bin/rails s` will pick them up in development. `.env.local` overrides `.env`, and real shell environment variables still win.
 
 ## Run
 

@@ -10,11 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_22_001000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_19_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "link_content_jobs", id: :string, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.string "link_id", null: false
+    t.string "status", default: "queued", null: false
+    t.datetime "updated_at", null: false
+    t.index ["link_id"], name: "index_link_content_jobs_on_link_id"
+    t.index ["status"], name: "index_link_content_jobs_on_status"
+  end
+
   create_table "links", id: :string, force: :cascade do |t|
+    t.text "content"
     t.text "note"
     t.integer "read", default: 0, null: false
     t.bigint "timestamp", null: false
