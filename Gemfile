@@ -29,6 +29,8 @@ gem "thruster", require: false
 
 gem 'dotenv', groups: [:development, :test]
 gem "sucker_punch"
+gem "inertia_rails"
+gem "vite_rails"
 
 gem 'csv'
 group :development, :test do
