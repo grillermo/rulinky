@@ -20,7 +20,7 @@ class LinksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "index renders Inertia component with expected props" do
-    get root_path, headers: { "X-Inertia" => "true", "X-Inertia-Version" => "1" }
+    get root_path, headers: { "X-Inertia" => "true" }
     assert_response :ok
     json = JSON.parse(response.body)
     assert_equal "Links/Index", json["component"]
