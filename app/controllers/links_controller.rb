@@ -10,23 +10,28 @@ class LinksController < ApplicationController
     @read_links_count = @links.count { |link| link.read.to_i == 1 }
     @unread_links_count = @links.count { |link| link.read.to_i == 0 }
 
-    @filtered_links =
-      if @filter == "read"
-        @links.select { |link| link.read.to_i == 1 }
-      else
-        @links.select { |link| link.read.to_i == 0 }
-      end
+    render inertia: "Links/Index", props: {
+      links: @links.map { |l|
+        {
+          id: l.id,
+          url: l.url,
+          title: helpers.link_display_title(l),
+          fullTitle: helpers.link_display_title_full(l),
+          note: l.note,
+          read: l.read.to_i == 1,
+          updatedAt: helpers.ms_to_local_time_string(l.updated_at),
+          activeJobId: l.active_content_job&.id
+        }
+      },
+      readCount: @read_links_count,
+      unreadCount: @unread_links_count
+    }
   end
 
   def destroy
     link = Link.find_by(id: params[:id])
     link&.destroy
-
-    if request.xhr?
-      head :ok
-    else
-      redirect_to root_path
-    end
+    redirect_to root_path
   end
 
   def read
@@ -42,11 +47,6 @@ class LinksController < ApplicationController
   def update_read_status(read_value)
     link = Link.find_by(id: params[:id])
     link&.update!(read: read_value, updated_at: (Time.now.to_f * 1000).to_i)
-
-    if request.xhr?
-      head :ok
-    else
-      redirect_back(fallback_location: root_path(filter: read_value == 1 ? "unread" : "read"))
-    end
+    redirect_back(fallback_location: root_path(filter: read_value == 1 ? "unread" : "read"))
   end
 end
