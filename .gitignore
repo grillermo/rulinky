@@ -58,6 +58,11 @@ node_modules/
 /public/packs-test
 /public/assets
 
+# Ignore Vite output directories
+/public/vite-dev
+/public/vite-test
+/public/vite
+
 # Ignore yarn files
 /yarn-error.log
 yarn-debug.log*
