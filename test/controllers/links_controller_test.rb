@@ -6,7 +6,7 @@ class LinksControllerTest < ActionDispatch::IntegrationTest
   def setup
     # Create a test link directly — no fixtures needed
     @link = Link.create!(
-      id: "test-link-id-001",
+      id: SecureRandom.uuid,
       url: "https://example.com",
       note: "Test note",
       read: 0,
@@ -16,6 +16,7 @@ class LinksControllerTest < ActionDispatch::IntegrationTest
   end
 
   def teardown
+    LinkContentJob.delete_all
     Link.delete_all
   end
 
