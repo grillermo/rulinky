@@ -4,6 +4,13 @@ import { router } from '@inertiajs/react'
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
   const [linkTitles, setLinkTitles] = useState({})
+  const [linksState, setLinksState] = useState(links)
+  const [stickyReadIds, setStickyReadIds] = useState(() => new Set())
+
+  useEffect(() => {
+    setLinksState(links)
+    setStickyReadIds(new Set())
+  }, [links])
 
   useEffect(() => {
     const cleanups = []
@@ -46,7 +53,53 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
     return () => cleanups.forEach(fn => fn())
   }, [links])
 
-  const filteredLinks = links.filter(l => l.read === (filter === 'read'))
+  const localReadCount = linksState.filter(l => l.read).length
+  const localUnreadCount = linksState.length - localReadCount
+  const displayedReadCount = linksState.length > 0 ? localReadCount : readCount
+  const displayedUnreadCount = linksState.length > 0 ? localUnreadCount : unreadCount
+
+  const filteredLinks = linksState.filter(link => {
+    if (filter === 'read') return link.read
+    return !link.read || stickyReadIds.has(link.id)
+  })
+
+  function authToken() {
+    const meta = document.querySelector('meta[name="rulinky-auth-token"]')
+    return (meta && meta.getAttribute('content')) || ''
+  }
+
+  function setLinkReadState(id, nextRead, keepVisibleInUnread = false) {
+    setLinksState(prev => prev.map(link => (link.id === id ? { ...link, read: nextRead } : link)))
+    setStickyReadIds(prev => {
+      const next = new Set(prev)
+      if (!nextRead) {
+        next.delete(id)
+        return next
+      }
+      if (keepVisibleInUnread) {
+        next.add(id)
+      } else {
+        next.delete(id)
+      }
+      return next
+    })
+  }
+
+  function persistReadState(id, nextRead, keepalive = false) {
+    return fetch('/api/links', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authToken()
+      },
+      body: JSON.stringify({ id, read: nextRead }),
+      keepalive
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to update link')
+      }
+    })
+  }
 
   function handleDelete(e, id) {
     e.preventDefault()
@@ -57,8 +110,19 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
   function handleToggleRead(e, link) {
     e.preventDefault()
     e.stopPropagation()
-    const path = link.read ? '/links/' + link.id + '/unread' : '/links/' + link.id + '/read'
-    router.patch(path, {}, { preserveState: true })
+    const nextRead = !link.read
+    setLinkReadState(link.id, nextRead)
+    persistReadState(link.id, nextRead).catch(() => {
+      setLinkReadState(link.id, link.read, stickyReadIds.has(link.id))
+    })
+  }
+
+  function handleLinkClick(link) {
+    if (link.read) return
+    setLinkReadState(link.id, true, true)
+    persistReadState(link.id, true, true).catch(() => {
+      setLinkReadState(link.id, false)
+    })
   }
 
   return (
@@ -80,7 +144,7 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                 filter === 'unread' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Unread <span>{unreadCount}</span>
+              Unread <span>{displayedUnreadCount}</span>
             </button>
             <button
               onClick={() => setFilter('read')}
@@ -88,7 +152,7 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                 filter === 'read' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Read <span>{readCount}</span>
+              Read <span>{displayedReadCount}</span>
             </button>
           </div>
 
@@ -109,6 +173,7 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                   className={`block p-4 mb-3 rounded-xl border border-blue-200 transition-all active:scale-[0.98] cursor-pointer text-inherit no-underline hover:cursor-pointer${
                     link.read ? ' bg-gray-100 opacity-60' : ''
                   }`}
+                  onClick={() => handleLinkClick(link)}
                 >
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
@@ -118,6 +183,9 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                       >
                         {linkTitles[link.id] !== undefined ? linkTitles[link.id] : link.title}
                       </h3>
+                      <p>
+                        {link.read ? 'read' : 'unread'}
+                      </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-2">
                       <button

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "informant": {
+      "command": "/bin/zsh",
+      "args": [
+        "-lc",
+        "cd /Users/grillermo/c/rulinky && set -a && source ./.env && source ./.env.local && set +a && exec /Users/grillermo/.rbenv/versions/4.0.4/bin/bundle exec informant-mcp --allow-insecure"
+      ]
+    }
+  }
+}

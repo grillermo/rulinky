@@ -1,0 +1,31 @@
+Dotenv.load(Rails.root.join(".env.local"), Rails.root.join(".env")) if defined?(Dotenv)
+
+RailsInformant.configure do |config|
+  # Error capture — disable in development/test by default
+  config.capture_errors = !Rails.env.local?
+
+  # User Context
+  # RailsInformant captures user context set via RailsInformant::Current.user_context.
+  # It also auto-detects Current.user or Warden user and captures their ID and email.
+  # Be mindful of PII (email, name, IP) in user context — this data is stored
+  # in the error monitoring database. For GDPR compliance, only include
+  # identifiers needed for debugging (e.g., user ID) rather than personal data.
+  #
+  # To filter sensitive fields, add them to filter_parameters:
+  #   config.filter_parameters += [:email, :ip]
+  #
+  # Or override what is captured by setting user context explicitly:
+  #   RailsInformant::Current.user_context = { id: current_user.id }
+
+  # Authentication token (required for MCP server access)
+  config.api_token = ENV["INFORMANT_API_TOKEN"] || Rails.application.credentials.dig(:rails_informant, :api_token)
+
+  # Slack webhook URL for error notifications
+  # config.slack_webhook_url = Rails.application.credentials.dig(:rails_informant, :slack_webhook_url)
+
+  # Webhook URL for generic HTTP notifications
+  # config.webhook_url = "https://example.com/webhooks/errors"
+
+  # Auto-purge resolved errors after N days (nil = keep forever)
+  # config.retention_days = 30
+end

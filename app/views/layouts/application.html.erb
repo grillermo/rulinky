@@ -28,50 +28,5 @@
 
   <body class="antialiased">
     <%= yield %>
-
-    <script>
-      (function () {
-        function authToken() {
-          var meta = document.querySelector('meta[name="rulinky-auth-token"]');
-          return (meta && meta.getAttribute('content')) || '';
-        }
-
-        function applyReadUi(a) {
-          a.setAttribute('data-link-read', '1');
-          a.classList.add('bg-gray-100', 'opacity-60');
-
-          var button = a.querySelector('button[data-role="toggle-read"]');
-          if (!button) return;
-
-          button.textContent = '📩';
-          button.title = 'Mark as unread';
-          button.setAttribute('aria-label', 'Mark as unread');
-          button.setAttribute('onclick', "handleUnread(event, '" + a.getAttribute('data-link-id') + "')");
-        }
-
-        document.addEventListener('click', function (e) {
-          var a = e.target && e.target.closest ? e.target.closest('a[data-link-id]') : null;
-          if (!a) return;
-
-          var isRead = a.getAttribute('data-link-read') === '1';
-          if (isRead) return;
-
-          applyReadUi(a);
-
-          var token = authToken();
-          if (!token) return;
-
-          fetch('/api/links', {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': token
-            },
-            body: JSON.stringify({ id: a.getAttribute('data-link-id'), read: true }),
-            keepalive: true
-          }).catch(function () {});
-        }, { capture: true });
-      })();
-    </script>
   </body>
 </html>
