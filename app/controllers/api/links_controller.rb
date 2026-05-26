@@ -5,7 +5,7 @@ require "securerandom"
 module Api
   class LinksController < ApplicationController
     skip_before_action :verify_authenticity_token
-    before_action :require_auth!, except: [:index, :job_status]
+    before_action :require_auth!, except: [:index]
 
     def index
       links = Link.order(updated_at: :desc).select(:id, :url, :note, :read, :timestamp, :updated_at, :content)
@@ -93,25 +93,6 @@ module Api
       render json: { message: "Link deleted" }
     rescue StandardError => e
       Rails.logger.error("Error deleting link: #{e.class}: #{e.message}")
-      render json: { error: "Internal Server Error" }, status: :internal_server_error
-    end
-
-    def job_status
-      job = LinkContentJob.includes(:link).find_by(id: params[:id])
-      unless job
-        render json: { error: "Job not found" }, status: :not_found
-        return
-      end
-
-      render json: {
-        id: job.id,
-        status: job.status,
-        finished: job.finished?,
-        error: job.error_message,
-        link: serialized_link(job.link),
-      }
-    rescue StandardError => e
-      Rails.logger.error("Error loading job status: #{e.class}: #{e.message}")
       render json: { error: "Internal Server Error" }, status: :internal_server_error
     end
 

@@ -19,8 +19,7 @@ class LinksController < ApplicationController
           fullTitle: helpers.link_display_title_full(l),
           note: l.note,
           read: l.read.to_i == 1,
-          updatedAt: helpers.ms_to_local_time_string(l.updated_at),
-          activeJobId: l.active_content_job&.id
+          updatedAt: helpers.ms_to_local_time_string(l.updated_at)
         }
       },
       readCount: @read_links_count,

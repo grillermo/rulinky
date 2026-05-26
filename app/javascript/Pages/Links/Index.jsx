@@ -3,54 +3,12 @@ import { router } from '@inertiajs/react'
 
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
-  const [linkTitles, setLinkTitles] = useState({})
   const [linksState, setLinksState] = useState(links)
   const [stickyReadIds, setStickyReadIds] = useState(() => new Set())
 
   useEffect(() => {
     setLinksState(links)
     setStickyReadIds(new Set())
-  }, [links])
-
-  useEffect(() => {
-    const cleanups = []
-
-    links.forEach(link => {
-      if (!link.activeJobId) return
-
-      let cancelled = false
-      let timeoutId = null
-
-      function poll() {
-        if (cancelled) return
-
-        fetch('/api/links/jobs/' + encodeURIComponent(link.activeJobId))
-          .then(res => {
-            if (!res.ok) throw new Error('failed')
-            return res.json()
-          })
-          .then(payload => {
-            if (cancelled) return
-            if (!payload.finished) {
-              timeoutId = setTimeout(poll, 2000)
-              return
-            }
-            const raw = payload.link && payload.link.title ? payload.link.title : ''
-            if (raw) {
-              const title = raw.length > 30 ? raw.slice(0, 29) + '…' : raw
-              setLinkTitles(prev => ({ ...prev, [link.id]: title }))
-            }
-          })
-          .catch(() => {
-            if (!cancelled) timeoutId = setTimeout(poll, 5000)
-          })
-      }
-
-      poll()
-      cleanups.push(() => { cancelled = true; clearTimeout(timeoutId) })
-    })
-
-    return () => cleanups.forEach(fn => fn())
   }, [links])
 
   const localReadCount = linksState.filter(l => l.read).length
@@ -181,7 +139,7 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                         className="text-lg font-medium text-gray-900"
                         title={link.fullTitle}
                       >
-                        {linkTitles[link.id] !== undefined ? linkTitles[link.id] : link.title}
+                        {link.title}
                       </h3>
                       <p>
                         {link.read ? 'read' : 'unread'}
