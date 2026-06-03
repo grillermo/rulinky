@@ -8,19 +8,6 @@ class Link < ApplicationRecord
 
   validates :url, presence: true
 
-  def content_title
-    return raw_title if raw_title.present?
-    return nil if content.blank?
-
-    Nokogiri::HTML(content).at("title")&.text&.squish.presence
-  rescue StandardError
-    nil
-  end
-
-  def display_title
-    content_title.presence || note.to_s.strip.presence || url
-  end
-
   def active_content_job
     content_jobs
       .select { |job| job.status.in?(%w[queued running]) }

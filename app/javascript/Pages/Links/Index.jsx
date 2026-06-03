@@ -137,13 +137,10 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                     <div className="flex-1 min-w-0">
                       <h3
                         className="text-lg font-medium text-gray-900"
-                        title={link.fullTitle}
+                        title={link.id}
                       >
                         {link.title}
                       </h3>
-                      <p>
-                        {link.id}
-                      </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-2">
                       <button

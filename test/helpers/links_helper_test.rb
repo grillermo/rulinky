@@ -2,7 +2,7 @@
 
 require "test_helper"
 
-class LinkTest < ActiveSupport::TestCase
+class LinksHelperTest < ActionView::TestCase
   def build_link(attrs = {})
     Link.new({
       id: SecureRandom.uuid,
@@ -12,18 +12,18 @@ class LinkTest < ActiveSupport::TestCase
     }.merge(attrs))
   end
 
-  test "content_title returns raw_title when present" do
+  test "link_content_title returns raw_title when present" do
     link = build_link(raw_title: "My Article", content: "<title>Ignored</title>")
-    assert_equal "My Article", link.content_title
+    assert_equal "My Article", link_content_title(link)
   end
 
-  test "content_title falls back to content title when raw_title blank" do
+  test "link_content_title falls back to content title when raw_title blank" do
     link = build_link(raw_title: "", content: "<html><head><title>From Content</title></head></html>")
-    assert_equal "From Content", link.content_title
+    assert_equal "From Content", link_content_title(link)
   end
 
-  test "content_title is nil when raw_title and content both blank" do
+  test "link_content_title is nil when raw_title and content both blank" do
     link = build_link(raw_title: nil, content: nil)
-    assert_nil link.content_title
+    assert_nil link_content_title(link)
   end
 end

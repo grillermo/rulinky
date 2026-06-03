@@ -45,7 +45,7 @@ module Api
         id:,
         note:,
         job_id: job_id,
-        title: record.display_title,
+        title: helpers.link_display_title_value(record),
       }, status: :created
     rescue StandardError => e
       Rails.logger.error("Error saving link: #{e.class}: #{e.message}")
@@ -116,8 +116,8 @@ module Api
         read: link.read,
         timestamp: link.timestamp,
         updated_at: link.updated_at,
-        title: link.display_title,
-        content_title: link.content_title,
+        title: helpers.link_display_title_value(link),
+        content_title: helpers.link_content_title(link),
       }
     end
   end
