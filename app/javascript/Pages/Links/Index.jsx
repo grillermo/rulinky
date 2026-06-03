@@ -136,8 +136,8 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <h3
-                        className="text-lg font-medium text-gray-900"
-                        title={link.id}
+                        className="text-lg font-medium text-gray-900 break-all"
+                        title={link.fullTitle}
                       >
                         {link.title}
                       </h3>

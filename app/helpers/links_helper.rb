@@ -24,21 +24,23 @@ module LinksHelper
     url.sub(/\Ahttps?:\/\/(www\.)?/i, "").sub(/\?.*\z/, "")
   end
 
-  def truncated_display_url(url, max_length: 30)
-    display_url_without_scheme(url).truncate(max_length)
+  def link_content_title(link)
+    return link.raw_title if link.raw_title.present?
+    return nil if link.content.blank?
+
+    Nokogiri::HTML(link.content).at("title")&.text&.squish.presence
+  rescue StandardError
+    nil
   end
 
-  def link_display_title(link, max_length: 30)
-    display_title = link.display_title.to_s
-    display_title = display_url_without_scheme(link.url) if display_title == link.url.to_s
+  def link_display_title(link, max_length: 50)
+    display_title = link_content_title(link).to_s
+    display_title = display_url_without_scheme(link.url) if display_title.blank?
 
     display_title.truncate(max_length)
   end
 
   def link_display_title_full(link)
-    display_title = link.display_title.to_s
-    return display_url_without_scheme(link.url) if display_title == link.url.to_s
-
-    display_title
+    link_content_title(link).to_s || display_url_without_scheme(link.url) 
   end
 end

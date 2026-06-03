@@ -4,22 +4,31 @@ class LinksController < ApplicationController
   def index
     @filter = params[:filter] == "read" ? "read" : "unread"
 
-    scope = Link.includes(:content_jobs).order(updated_at: :desc).select(:id, :url, :note, :read, :timestamp, :updated_at, :content)
+    scope = Link.includes(:content_jobs).order(updated_at: :desc).select(
+      :id,
+      :url,
+      :note,
+      :read,
+      :timestamp,
+      :updated_at,
+      :content,
+      :raw_title
+    )
     @links = scope.to_a
 
     @read_links_count = @links.count { |link| link.read.to_i == 1 }
     @unread_links_count = @links.count { |link| link.read.to_i == 0 }
 
     render inertia: "Links/Index", props: {
-      links: @links.map { |l|
+      links: @links.map { |link|
         {
-          id: l.id,
-          url: l.url,
-          title: helpers.link_display_title(l),
-          fullTitle: helpers.link_display_title_full(l),
-          note: l.note,
-          read: l.read.to_i == 1,
-          updatedAt: helpers.ms_to_local_time_string(l.updated_at)
+          id: link.id,
+          url: link.url,
+          title: helpers.link_display_title(link),
+          fullTitle: helpers.link_display_title_full(link),
+          note: link.note,
+          read: link.read.to_i == 1,
+          updatedAt: helpers.ms_to_local_time_string(link.updated_at)
         }
       },
       readCount: @read_links_count,
