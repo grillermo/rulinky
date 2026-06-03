@@ -31,11 +31,16 @@ gem 'dotenv', groups: [:development, :test]
 gem "sucker_punch"
 gem "inertia_rails"
 gem "vite_rails"
+gem "selenium-webdriver"
 
 gem 'csv'
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
+end
+
+group :test do
+  gem "webmock"
 end
 
 group :development do

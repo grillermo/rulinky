@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_26_194019) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_02_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -78,6 +78,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_194019) do
   create_table "links", id: :string, force: :cascade do |t|
     t.text "content"
     t.text "note"
+    t.text "raw_title"
     t.integer "read", default: 0, null: false
     t.bigint "timestamp", null: false
     t.bigint "updated_at", null: false

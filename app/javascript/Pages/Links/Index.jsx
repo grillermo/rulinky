@@ -142,7 +142,7 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                         {link.title}
                       </h3>
                       <p>
-                        {link.read ? 'read' : 'unread'}
+                        {link.id}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-2">

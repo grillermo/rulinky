@@ -9,6 +9,7 @@ class Link < ApplicationRecord
   validates :url, presence: true
 
   def content_title
+    return raw_title if raw_title.present?
     return nil if content.blank?
 
     Nokogiri::HTML(content).at("title")&.text&.squish.presence
