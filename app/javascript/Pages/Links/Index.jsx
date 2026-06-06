@@ -164,6 +164,11 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                       </button>
                     </div>
                   </div>
+                  {link.note && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {link.note}
+                    </div>
+                  )}
                   <div className="mt-2 text-xs text-gray-400">
                     {link.updatedAt}
                   </div>
