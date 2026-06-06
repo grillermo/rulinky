@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { router } from '@inertiajs/react'
 
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
@@ -62,7 +61,20 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
   function handleDelete(e, id) {
     e.preventDefault()
     e.stopPropagation()
-    router.delete('/links/' + id, { preserveState: true })
+    const snapshot = linksState
+    const stickySnapshot = stickyReadIds
+    setLinksState(prev => prev.filter(l => l.id !== id))
+    setStickyReadIds(prev => { const next = new Set(prev); next.delete(id); return next })
+    fetch('/api/links', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: authToken() },
+      body: JSON.stringify({ id })
+    }).then(response => {
+      if (!response.ok) throw new Error('Failed to delete link')
+    }).catch(() => {
+      setLinksState(snapshot)
+      setStickyReadIds(stickySnapshot)
+    })
   }
 
   function handleToggleRead(e, link) {
