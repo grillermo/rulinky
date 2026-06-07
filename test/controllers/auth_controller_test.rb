@@ -49,4 +49,14 @@ class AuthControllerTest < ActionDispatch::IntegrationTest
     post "/auth/verify", params: { code: "000000" }
     assert_redirected_to verify_auth_path
   end
+
+  test "destroy signs out and redirects to new_auth" do
+    post auth_path, params: { email: "signout@example.com" }
+    user = User.find_by(email: "signout@example.com")
+    post "/auth/verify", params: { code: user.otp_code }
+    assert_redirected_to root_path
+
+    delete sign_out_path
+    assert_redirected_to new_auth_path
+  end
 end
