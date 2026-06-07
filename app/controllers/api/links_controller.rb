@@ -3,12 +3,10 @@
 require "securerandom"
 
 module Api
-  class LinksController < ApplicationController
-    skip_before_action :verify_authenticity_token
-    before_action :require_auth!, except: [:index]
+  class LinksController < Api::BaseController
 
     def index
-      links = Link.order(updated_at: :desc).select(:id, :url, :note, :read, :timestamp, :updated_at, :content)
+      links = current_user.links.order(updated_at: :desc).select(:id, :url, :note, :read, :timestamp, :updated_at, :content)
       render json: links.map { |link| serialized_link(link) }
     rescue StandardError => e
       Rails.logger.error("Database error: #{e.class}: #{e.message}")
@@ -28,7 +26,7 @@ module Api
 
       id = SecureRandom.uuid
       timestamp_ms = (Time.now.to_f * 1000).to_i
-      record = Link.create!(
+      record = current_user.links.create!(
         id: id,
         url: link,
         note: note,
@@ -45,7 +43,7 @@ module Api
         id:,
         note:,
         job_id: job_id,
-        title: helpers.link_display_title_value(record),
+        title: helpers.link_display_title_full(record),
       }, status: :created
     rescue StandardError => e
       Rails.logger.error("Error saving link: #{e.class}: #{e.message}")
@@ -54,15 +52,15 @@ module Api
 
     def update
       id = params[:id]
-      read = params[:read]
+      read = ActiveModel::Type::Boolean.new.cast(params[:read])
 
-      unless id.is_a?(String) && id.strip != "" && (read == true || read == false)
+      unless id.is_a?(String) && id.strip != "" && !read.nil?
         render json: { error: "Invalid payload" }, status: :bad_request
         return
       end
 
       updated_at_ms = (Time.now.to_f * 1000).to_i
-      record = Link.find_by(id: id)
+      record = current_user.links.find_by(id: id)
       unless record
         render json: { error: "Link not found" }, status: :not_found
         return
@@ -83,7 +81,7 @@ module Api
         return
       end
 
-      record = Link.find_by(id: id)
+      record = current_user.links.find_by(id: id)
       unless record
         render json: { error: "Link not found" }, status: :not_found
         return
@@ -98,16 +96,6 @@ module Api
 
     private
 
-    def require_auth!
-      token = request.headers["Authorization"].to_s
-      expected = ENV["NEXT_PUBLIC_AUTH_TOKEN"].to_s
-      expected = ENV["AUTH_TOKEN"].to_s if expected.empty?
-
-      unless expected != "" && ActiveSupport::SecurityUtils.secure_compare(token, expected)
-        render json: { error: "Unauthorized" }, status: :unauthorized
-      end
-    end
-
     def serialized_link(link)
       {
         id: link.id,
@@ -116,7 +104,7 @@ module Api
         read: link.read,
         timestamp: link.timestamp,
         updated_at: link.updated_at,
-        title: helpers.link_display_title_value(link),
+        title: helpers.link_display_title_full(link),
         content_title: helpers.link_content_title(link),
       }
     end
