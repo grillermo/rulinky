@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_02_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_07_001715) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -86,6 +86,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_000000) do
     t.index ["id"], name: "index_links_on_id", unique: true
     t.index ["read"], name: "index_links_on_read"
     t.index ["updated_at"], name: "index_links_on_updated_at"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "api_token"
+    t.datetime "confirmed_at"
+    t.datetime "created_at", null: false
+    t.datetime "current_sign_in_at"
+    t.string "current_sign_in_ip"
+    t.string "email", default: "", null: false
+    t.datetime "last_sign_in_at"
+    t.string "last_sign_in_ip"
+    t.string "otp_code"
+    t.datetime "otp_expires_at"
+    t.datetime "remember_created_at"
+    t.integer "sign_in_count", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["api_token"], name: "index_users_on_api_token", unique: true
+    t.index ["email"], name: "index_users_on_email", unique: true
   end
 
   add_foreign_key "informant_error_groups", "informant_error_groups", column: "duplicate_of_id"
