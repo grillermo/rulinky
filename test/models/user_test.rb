@@ -43,7 +43,8 @@ class UserTest < ActiveSupport::TestCase
     user = User.create!(email: "bad@example.com")
     user.generate_otp!
 
-    assert_not user.verify_otp!("000000") if user.otp_code != "000000"
+    wrong_code = user.otp_code == "000000" ? "111111" : "000000"
+    assert_not user.verify_otp!(wrong_code)
 
     user.update!(otp_expires_at: 1.minute.ago)
     assert_not user.verify_otp!(user.otp_code)
