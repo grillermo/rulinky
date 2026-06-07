@@ -1,4 +1,12 @@
 Rails.application.routes.draw do
+  devise_for :users, skip: :all
+
+  get    "/auth/new",    to: "auth#new",         as: :new_auth
+  post   "/auth",        to: "auth#create",      as: :auth
+  get    "/auth/verify", to: "auth#verify_form", as: :verify_auth
+  post   "/auth/verify", to: "auth#verify"
+  delete "/auth",        to: "auth#destroy",     as: :sign_out
+
   mount RailsInformant::Engine => "/informant"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
