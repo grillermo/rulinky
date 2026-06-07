@@ -51,3 +51,4 @@ end
 gem "rails-informant", "~> 0.4.3"
 
 gem "devise", "~> 5.0"
+gem "mailgun-ruby", "~> 1.2"

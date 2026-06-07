@@ -18,7 +18,7 @@ class AuthController < ApplicationController
     user = User.find_or_create_by!(email: email)
     user.generate_otp!
     Rails.logger.info "[OTP] #{email} -> #{user.otp_code}"
-    OtpMailer.send_otp(user).deliver_later
+    OtpMailer.send_otp(user)
     session[:auth_email] = email
 
     redirect_to verify_auth_path
