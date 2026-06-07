@@ -35,8 +35,8 @@ gem "selenium-webdriver"
 
 gem 'csv'
 group :development, :test do
-  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
+  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 end
 
 group :test do
@@ -49,3 +49,5 @@ group :development do
 end
 
 gem "rails-informant", "~> 0.4.3"
+
+gem "devise", "~> 5.0"
