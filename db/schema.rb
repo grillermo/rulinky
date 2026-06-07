@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_07_001715) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_07_002425) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -83,9 +83,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_001715) do
     t.bigint "timestamp", null: false
     t.bigint "updated_at", null: false
     t.text "url", null: false
+    t.bigint "user_id"
     t.index ["id"], name: "index_links_on_id", unique: true
     t.index ["read"], name: "index_links_on_read"
     t.index ["updated_at"], name: "index_links_on_updated_at"
+    t.index ["user_id"], name: "index_links_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -108,4 +110,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_001715) do
 
   add_foreign_key "informant_error_groups", "informant_error_groups", column: "duplicate_of_id"
   add_foreign_key "informant_occurrences", "informant_error_groups", column: "error_group_id"
+  add_foreign_key "links", "users"
 end

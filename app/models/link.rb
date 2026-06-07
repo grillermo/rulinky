@@ -5,6 +5,7 @@ class Link < ApplicationRecord
   self.record_timestamps = false
 
   has_many :content_jobs, class_name: "LinkContentJob", dependent: :destroy
+  belongs_to :user
 
   validates :url, presence: true
 
