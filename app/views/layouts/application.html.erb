@@ -21,7 +21,7 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag "application" %>
     <script src="https://cdn.tailwindcss.com"></script>
-    <meta name="rulinky-auth-token" content="<%= ENV["NEXT_PUBLIC_AUTH_TOKEN"].presence || ENV["AUTH_TOKEN"].to_s %>">
+    <meta name="rulinky-auth-token" content="<%= current_user&.api_token %>">
     <%= vite_client_tag %>
     <%= vite_javascript_tag 'application.jsx' %>
   </head>

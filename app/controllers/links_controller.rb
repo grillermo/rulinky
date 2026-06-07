@@ -4,7 +4,7 @@ class LinksController < ApplicationController
   def index
     @filter = params[:filter] == "read" ? "read" : "unread"
 
-    scope = Link.includes(:content_jobs).order(updated_at: :desc).select(
+    scope = current_user.links.includes(:content_jobs).order(updated_at: :desc).select(
       :id,
       :url,
       :note,
@@ -37,7 +37,7 @@ class LinksController < ApplicationController
   end
 
   def destroy
-    link = Link.find_by(id: params[:id])
+    link = current_user.links.find_by(id: params[:id])
     link&.destroy
     redirect_to root_path
   end
@@ -53,7 +53,7 @@ class LinksController < ApplicationController
   private
 
   def update_read_status(read_value)
-    link = Link.find_by(id: params[:id])
+    link = current_user.links.find_by(id: params[:id])
     link&.update!(read: read_value, updated_at: (Time.now.to_f * 1000).to_i)
     redirect_back(fallback_location: root_path(filter: read_value == 1 ? "unread" : "read"))
   end
