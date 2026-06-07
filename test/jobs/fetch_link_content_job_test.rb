@@ -4,11 +4,13 @@ require "test_helper"
 
 class FetchLinkContentJobTest < ActiveSupport::TestCase
   def setup
+    @user = User.find_or_create_by!(email: "test@example.com")
     @link = Link.create!(
       id: SecureRandom.uuid,
       url: "https://example.com/post",
       timestamp: (Time.now.to_f * 1000).to_i,
       updated_at: (Time.now.to_f * 1000).to_i,
+      user: @user,
     )
     @job = LinkContentJob.create!(id: SecureRandom.uuid, link: @link, status: "queued")
   end
@@ -16,6 +18,7 @@ class FetchLinkContentJobTest < ActiveSupport::TestCase
   def teardown
     LinkContentJob.delete_all
     Link.delete_all
+    User.where(email: "test@example.com").delete_all
   end
 
   # Temporarily replaces a class method, restoring the original afterwards.
