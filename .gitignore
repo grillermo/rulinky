@@ -77,3 +77,4 @@ output.log
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+project/
