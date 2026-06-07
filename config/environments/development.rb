@@ -46,4 +46,17 @@ Rails.application.configure do
   config.hosts << "rulinky.chiq.me"
   # Raise error when a beconfig.hosts << "rulinky.chiq.me"fore_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.smtp_settings = {
+    address: ENV["SMTP_HOST"],
+    port: 587,
+    domain: ENV["MAILGUN_DOMAIN"],
+    user_name: "postmaster@#{ENV['MAILGUN_DOMAIN']}",
+    password: ENV["MAILGUN_API_KEY"],
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
 end
