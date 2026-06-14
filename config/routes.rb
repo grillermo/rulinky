@@ -20,6 +20,7 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root "links#index"
+  post "/links", to: "links#create", as: :links
   delete "/links/:id", to: "links#destroy", as: :link
   patch "/links/:id/read", to: "links#read", as: :read_link
   patch "/links/:id/unread", to: "links#unread", as: :unread_link

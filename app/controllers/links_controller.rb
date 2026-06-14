@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "securerandom"
+
 class LinksController < ApplicationController
   def index
     @filter = params[:filter] == "read" ? "read" : "unread"
@@ -34,6 +36,31 @@ class LinksController < ApplicationController
       readCount: @read_links_count,
       unreadCount: @unread_links_count
     }
+  end
+
+  def create
+    url = params[:url].to_s.strip
+    note = params[:note].to_s
+
+    if url.blank?
+      redirect_to root_path, inertia: { errors: { url: "Enter a link" } }
+      return
+    end
+
+    timestamp_ms = (Time.now.to_f * 1000).to_i
+    link = current_user.links.create!(
+      id: SecureRandom.uuid,
+      url: url,
+      note: note,
+      read: 0,
+      timestamp: timestamp_ms,
+      updated_at: timestamp_ms
+    )
+
+    job = LinkContentJob.create!(id: SecureRandom.uuid, link: link, status: "queued")
+    FetchLinkContentJob.perform_async(job.id)
+
+    redirect_to root_path
   end
 
   def destroy

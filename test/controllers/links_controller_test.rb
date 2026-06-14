@@ -71,6 +71,28 @@ class LinksControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
+  test "create adds a link for the current user and queues content fetch" do
+    assert_difference "Link.count", 1 do
+      assert_difference "LinkContentJob.count", 1 do
+        post links_path, params: { url: "https://created.example.com", note: "Read later" }
+      end
+    end
+
+    created = Link.find_by(url: "https://created.example.com")
+    assert_equal @user, created.user
+    assert_equal "Read later", created.note
+    assert_equal 0, created.read
+    assert_redirected_to root_path
+  end
+
+  test "create rejects blank links" do
+    assert_no_difference "Link.count" do
+      post links_path, params: { url: " " }
+    end
+
+    assert_redirected_to root_path
+  end
+
   test "read marks link as read and redirects back" do
     patch read_link_path(@link.id)
     assert_equal 1, @link.reload.read

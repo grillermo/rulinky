@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useForm } from '@inertiajs/react'
 
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
   const [linksState, setLinksState] = useState(links)
   const [stickyReadIds, setStickyReadIds] = useState(() => new Set())
+  const { data, setData, post, processing, errors, reset } = useForm({
+    url: '',
+    note: ''
+  })
 
   useEffect(() => {
     setLinksState(links)
@@ -95,6 +100,17 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
     })
   }
 
+  function handleCreate(e) {
+    e.preventDefault()
+    post('/links', {
+      preserveScroll: true,
+      onSuccess: () => {
+        reset()
+        setFilter('unread')
+      }
+    })
+  }
+
   return (
     <main className="min-h-screen bg-gray-100 text-gray-900 font-sans p-4 flex flex-col items-center">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
@@ -107,6 +123,40 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
         </header>
 
         <div>
+          <form onSubmit={handleCreate} className="mb-6 space-y-3">
+            <div>
+              <label htmlFor="new-link-url" className="sr-only">Link URL</label>
+              <input
+                id="new-link-url"
+                type="url"
+                value={data.url}
+                onChange={e => setData('url', e.target.value)}
+                placeholder="https://example.com/article"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+              {errors.url && <p className="mt-1 text-sm text-red-600">{errors.url}</p>}
+            </div>
+            <div>
+              <label htmlFor="new-link-note" className="sr-only">Note</label>
+              <textarea
+                id="new-link-note"
+                value={data.note}
+                onChange={e => setData('note', e.target.value)}
+                placeholder="Optional note"
+                rows={2}
+                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+              {errors.note && <p className="mt-1 text-sm text-red-600">{errors.note}</p>}
+            </div>
+            <button
+              type="submit"
+              disabled={processing}
+              className="w-full rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
+            >
+              {processing ? 'Saving...' : 'Add link'}
+            </button>
+          </form>
+
           <div className="flex p-1 bg-gray-100 rounded-lg mb-6 top-2 z-10 backdrop-blur-sm">
             <button
               onClick={() => setFilter('unread')}
