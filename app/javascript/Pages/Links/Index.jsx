@@ -176,7 +176,7 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
             </button>
           </div>
 
-          <div className="space-y-1 min-h-[50vh] flex flex-col">
+          <div className="space-y-4 min-h-[50vh] flex flex-col">
             {filteredLinks.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <p>No links found.</p>

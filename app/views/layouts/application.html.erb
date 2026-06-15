@@ -24,6 +24,7 @@
     <%= stylesheet_link_tag "application" %>
     <script src="https://cdn.tailwindcss.com"></script>
     <meta name="rulinky-auth-token" content="<%= current_user&.api_token %>">
+    <%= vite_react_refresh_tag %>
     <%= vite_client_tag %>
     <%= vite_javascript_tag 'application.jsx' %>
   </head>
