@@ -176,65 +176,64 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
             </button>
           </div>
 
-          <div className="space-y-1 min-h-[50vh]">
+          <div className="space-y-1 min-h-[50vh] flex flex-col">
             {filteredLinks.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <p>No links found.</p>
               </div>
             ) : (
               filteredLinks.map(link => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-link-id={link.id}
-                  data-link-read={link.read ? '1' : '0'}
-                  className={`block p-4 mb-3 rounded-xl border border-blue-200 transition-all active:scale-[0.98] cursor-pointer text-inherit no-underline hover:cursor-pointer${
-                    link.read ? ' bg-gray-100 opacity-60' : ''
-                  }`}
-                  onClick={() => handleLinkClick(link)}
-                >
-                  <div className="flex justify-between items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h3
-                        className="text-lg font-medium text-gray-900 break-all"
-                        title={link.fullTitle}
-                      >
-                        {link.title}
-                      </h3>
+                <div key={link.id} className={`rounded-xl border border-blue-200 transition-all${link.read ? ' bg-gray-100 opacity-60' : ''} link-wrapper`}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-link-id={link.id}
+                    data-link-read={link.read ? '1' : '0'}
+                    className="block p-4 active:scale-[0.98] cursor-pointer text-inherit no-underline hover:cursor-pointer"
+                    onClick={() => handleLinkClick(link)}
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className="text-lg font-medium text-gray-900 break-all"
+                          title={link.fullTitle}
+                        >
+                          {link.title}
+                        </h3>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-center gap-2">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-red-50 text-sm transition-colors hover:bg-red-100"
+                          title="Delete link"
+                          aria-label="Delete link"
+                          onClick={e => handleDelete(e, link.id)}
+                        >
+                          🗑️
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-sm transition-colors hover:bg-blue-100"
+                          data-role="toggle-read"
+                          title={link.read ? 'Mark as unread' : 'Mark as read'}
+                          aria-label={link.read ? 'Mark as unread' : 'Mark as read'}
+                          onClick={e => handleToggleRead(e, link)}
+                        >
+                          {link.read ? '📩' : '✅'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex shrink-0 flex-col items-center gap-2">
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-red-50 text-sm transition-colors hover:bg-red-100"
-                        title="Delete link"
-                        aria-label="Delete link"
-                        onClick={e => handleDelete(e, link.id)}
-                      >
-                        🗑️
-                      </button>
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-sm transition-colors hover:bg-blue-100"
-                        data-role="toggle-read"
-                        title={link.read ? 'Mark as unread' : 'Mark as read'}
-                        aria-label={link.read ? 'Mark as unread' : 'Mark as read'}
-                        onClick={e => handleToggleRead(e, link)}
-                      >
-                        {link.read ? '📩' : '✅'}
-                      </button>
-                    </div>
-                  </div>
+                  </a>
                   {link.note && (
-                    <div className="mt-2 text-sm text-gray-600">
+                    <div className="mt-2 px-4 text-sm text-gray-600">
                       {link.note}
                     </div>
                   )}
-                  <div className="mt-2 text-xs text-gray-400">
+                  <div className="mt-2 px-4 text-xs text-gray-400">
                     {link.updatedAt}
                   </div>
-                </a>
+                </div>
               ))
             )}
           </div>
