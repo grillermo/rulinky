@@ -19,7 +19,7 @@ class AuthController < ApplicationController
     user.generate_otp!
     Rails.logger.info "[OTP] #{email} -> #{user.otp_code}"
     if Rails.env.production?
-      OtpMailer.send_otp(user)
+      SlackOtpNotifier.send_otp(user)
     end
     session[:auth_email] = email
 
