@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useForm } from '@inertiajs/react'
+import { useForm, Link } from '@inertiajs/react'
 
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
+  const [menuOpen, setMenuOpen] = useState(false)
   const [linksState, setLinksState] = useState(links)
   const [stickyReadIds, setStickyReadIds] = useState(() => new Set())
   const { data, setData, post, processing, errors, reset } = useForm({
@@ -113,13 +114,41 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
 
   return (
     <main className="min-h-screen bg-gray-100 text-gray-900 font-sans p-4 flex flex-col items-center">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-        <header className="text-center justify-center min-h-[70px] pb-6">
+      <div id="linksList" className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <header className="relative text-center justify-center min-h-[70px] pb-6">
           <img
             src="https://guillermo-public.s3.us-east-1.amazonaws.com/file-to-s3-uploads/9253d692-d691-4b84-83e3-766c1b99f39b-Image.png?v=20260405"
             alt="Rulinky logo"
             className="h-auto w-auto inline-block max-w-[80px]"
           />
+          <div className="absolute right-0 top-0">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(open => !open)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition-colors hover:bg-gray-100 hover:cursor-pointer"
+              aria-label="Menu"
+              aria-haspopup="true"
+              aria-expanded={menuOpen}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="17" y2="6" />
+                <line x1="3" y1="10" x2="17" y2="10" />
+                <line x1="3" y1="14" x2="17" y2="14" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-40 rounded-lg border border-gray-200 bg-white py-1 text-left shadow-lg z-20">
+                <Link
+                  href="/auth"
+                  method="delete"
+                  as="button"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 hover:cursor-pointer"
+                >
+                  Sign out
+                </Link>
+              </div>
+            )}
+          </div>
         </header>
 
         <div>
