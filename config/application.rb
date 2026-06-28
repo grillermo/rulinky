@@ -39,6 +39,6 @@ module Rulinky
     # Don't generate system test files.
     config.generators.system_tests = nil
 
-    config.hosts << "eslabony.chiq.me"
+    config.hosts.concat(ENV["HOSTS"].split(",").map(&:strip)) if ENV["HOSTS"].present?
   end
 end
