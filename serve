@@ -1,1 +1,1 @@
-rails s -p 3002
+npm run build && rails s -p 3002

@@ -6,7 +6,7 @@ require "json"
 
 class SlackOtpNotifier
   def self.send_otp(user)
-    webhook = ENV["SLACK_WEBHOOK_URL"]
+    webhook = ENV["SLACK_OTP_WEBHOOK_URL"]
     return if webhook.blank?
 
     uri = URI(webhook)
