@@ -82,3 +82,6 @@ project/
 # Ignore key files for decrypting credentials and more.
 /config/credentials/*.key
 
+# Ignore encrypted credentials files.
+/config/credentials/*.enc
+
