@@ -33,6 +33,10 @@ module Rulinky
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
+    config.logger = ActiveSupport::TaggedLogging.new(
+      ActiveSupport::Logger.new(Rails.root.join("log/#{Rails.env}.log"), 1, 1.megabyte)
+    )
+
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
