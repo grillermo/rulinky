@@ -85,3 +85,4 @@ project/
 # Ignore encrypted credentials files.
 /config/credentials/*.enc
 
+.tokensave
