@@ -1,8 +1,11 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
-  url: <%= ENV.fetch("DATABASE_URL", "postgresql://grillermo@192.168.1.1/rulinky") %>
+  host: <%= ENV["DATABASE_HOST"].presence %>
+  port: <%= ENV["DATABASE_PORT"] || 5432 %>
+  username: <%= ENV["DATABASE_USER"] %>
+  password: <%= ENV["DATABASE_PASSWORD"] %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
 development:
   <<: *default
@@ -13,5 +16,4 @@ test:
 
 production:
   <<: *default
-  url: <%= ENV.fetch("DATABASE_URL") %>
-
+  database: rulinky

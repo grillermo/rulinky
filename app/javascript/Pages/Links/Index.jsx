@@ -5,6 +5,7 @@ import { isCreateShortcut } from './createShortcut'
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
   const [linksState, setLinksState] = useState(links)
   const [stickyReadIds, setStickyReadIds] = useState(() => new Set())
   const { data, setData, post, processing, errors, reset } = useForm({
@@ -109,6 +110,7 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
       onSuccess: () => {
         reset()
         setFilter('unread')
+        setFormOpen(false)
       }
     })
   }
@@ -158,44 +160,76 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
         </header>
 
         <div>
-          <form onSubmit={handleCreate} onKeyDown={handleCreateShortcut} className="mb-6 space-y-3">
-            <div>
-              <label htmlFor="new-link-url" className="sr-only">Link URL</label>
-              <input
-                id="new-link-url"
-                type="url"
-                value={data.url}
-                onChange={e => setData('url', e.target.value)}
-                placeholder="https://example.com/article"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              />
-              {errors.url && <p className="mt-1 text-sm text-red-600">{errors.url}</p>}
-            </div>
-            <div>
-              <label htmlFor="new-link-note" className="sr-only">Note</label>
-              <textarea
-                id="new-link-note"
-                value={data.note}
-                onChange={e => setData('note', e.target.value)}
-                placeholder="Optional note"
-                rows={2}
-                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              />
-              {errors.note && <p className="mt-1 text-sm text-red-600">{errors.note}</p>}
-            </div>
+          <div className="mb-6 rounded-lg border border-gray-200">
             <button
-              type="submit"
-              disabled={processing}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
+              type="button"
+              onClick={() => setFormOpen(open => !open)}
+              className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:cursor-pointer hover:bg-gray-50"
+              aria-expanded={formOpen}
+              aria-controls="add-link-form"
             >
-              {processing ? 'Saving...' : (
-                <>
-                  <span>Add link</span>
-                  <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs font-normal text-gray-300">Cmd+Enter</span>
-                </>
-              )}
+              <span>Add link</span>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform ${formOpen ? 'rotate-180' : ''}`}
+              >
+                <polyline points="5 7.5 10 12.5 15 7.5" />
+              </svg>
             </button>
-          </form>
+            {formOpen && (
+              <form
+                id="add-link-form"
+                onSubmit={handleCreate}
+                onKeyDown={handleCreateShortcut}
+                className="space-y-3 border-t border-gray-200 p-3"
+              >
+                <div>
+                  <label htmlFor="new-link-url" className="sr-only">Link URL</label>
+                  <input
+                    id="new-link-url"
+                    type="url"
+                    value={data.url}
+                    onChange={e => setData('url', e.target.value)}
+                    placeholder="https://example.com/article"
+                    autoFocus
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                  {errors.url && <p className="mt-1 text-sm text-red-600">{errors.url}</p>}
+                </div>
+                <div>
+                  <label htmlFor="new-link-note" className="sr-only">Note</label>
+                  <textarea
+                    id="new-link-note"
+                    value={data.note}
+                    onChange={e => setData('note', e.target.value)}
+                    placeholder="Optional note"
+                    rows={2}
+                    className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                  {errors.note && <p className="mt-1 text-sm text-red-600">{errors.note}</p>}
+                </div>
+                <button
+                  type="submit"
+                  disabled={processing}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {processing ? 'Saving...' : (
+                    <>
+                      <span>Add link</span>
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs font-normal text-gray-300">Cmd+Enter</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
 
           <div className="flex p-1 bg-gray-100 rounded-lg mb-6 top-2 z-10 backdrop-blur-sm">
             <button
