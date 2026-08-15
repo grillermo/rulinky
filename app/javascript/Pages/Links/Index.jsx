@@ -4,6 +4,7 @@ import { isCreateShortcut } from './createShortcut'
 
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
+  const [query, setQuery] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [linksState, setLinksState] = useState(links)
@@ -23,9 +24,14 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
   const displayedReadCount = linksState.length > 0 ? localReadCount : readCount
   const displayedUnreadCount = linksState.length > 0 ? localUnreadCount : unreadCount
 
+  const queryTerms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+
   const filteredLinks = linksState.filter(link => {
-    if (filter === 'read') return link.read
-    return !link.read || stickyReadIds.has(link.id)
+    const matchesTab = filter === 'read' ? link.read : !link.read || stickyReadIds.has(link.id)
+    if (!matchesTab) return false
+    if (queryTerms.length === 0) return true
+    const haystack = `${link.fullTitle || ''} ${link.note || ''} ${link.url || ''}`.toLowerCase()
+    return queryTerms.every(term => haystack.includes(term))
   })
 
   function authToken() {
@@ -228,6 +234,31 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
                   )}
                 </button>
               </form>
+            )}
+          </div>
+
+          <div className="relative mb-4">
+            <label htmlFor="link-search" className="sr-only">Search links</label>
+            <input
+              id="link-search"
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search links…"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 hover:cursor-pointer"
+                aria-label="Clear search"
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="5" y1="5" x2="15" y2="15" />
+                  <line x1="15" y1="5" x2="5" y2="15" />
+                </svg>
+              </button>
             )}
           </div>
 
