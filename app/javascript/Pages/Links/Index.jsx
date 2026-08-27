@@ -2,6 +2,44 @@ import { useState, useEffect } from 'react'
 import { useForm, Link } from '@inertiajs/react'
 import { isCreateShortcut } from './createShortcut'
 
+const TIMELINE_BASE = [173, 27, 26] // rgba(173, 27, 26, 1)
+const TIMELINE_END = [205, 196, 196] // muted, for the far end of the gradient
+const TIMELINE_MAX_RANGE = 6 // buckets: 0 = this month ... 6 = "6+ months ago"
+
+function monthsAgoIndex(ms) {
+  if (!ms) return TIMELINE_MAX_RANGE
+  const date = new Date(ms)
+  const now = new Date()
+  const diff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth())
+  return Math.min(Math.max(diff, 0), TIMELINE_MAX_RANGE)
+}
+
+function rangeLabel(range) {
+  if (range === 0) return 'This month'
+  if (range === TIMELINE_MAX_RANGE) return `${TIMELINE_MAX_RANGE}+ months ago`
+  return `${range} month${range > 1 ? 's' : ''} ago`
+}
+
+function rangeColor(range) {
+  const t = range / TIMELINE_MAX_RANGE
+  const [r, g, b] = TIMELINE_BASE.map((start, i) => Math.round(start + (TIMELINE_END[i] - start) * t))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+function buildTimelineGroups(items) {
+  const groups = []
+  items.forEach(link => {
+    const range = monthsAgoIndex(link.updatedAtMs)
+    const last = groups[groups.length - 1]
+    if (last && last.range === range) {
+      last.items.push(link)
+    } else {
+      groups.push({ range, items: [link] })
+    }
+  })
+  return groups
+}
+
 export default function LinksIndex({ links, readCount, unreadCount }) {
   const [filter, setFilter] = useState('unread')
   const [query, setQuery] = useState('')
@@ -281,63 +319,85 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
             </button>
           </div>
 
-          <div className="space-y-4 min-h-[50vh] flex flex-col">
+          <div className="min-h-[50vh] flex flex-col">
             {filteredLinks.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <p>No links found.</p>
               </div>
             ) : (
-              filteredLinks.map(link => (
-                <div key={link.id} className={`rounded-xl border border-blue-200 transition-all${link.read ? ' bg-gray-100 opacity-60' : ''} link-wrapper`}>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-link-id={link.id}
-                    data-link-read={link.read ? '1' : '0'}
-                    className="block p-4 active:scale-[0.98] cursor-pointer text-inherit no-underline hover:cursor-pointer"
-                    onClick={() => handleLinkClick(link)}
-                  >
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3
-                          className="text-lg font-medium text-gray-900 break-all"
-                          title={link.fullTitle}
-                        >
-                          {link.title}
-                        </h3>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-center gap-2">
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-red-50 text-sm transition-colors hover:bg-red-100"
-                          title="Delete link"
-                          aria-label="Delete link"
-                          onClick={e => handleDelete(e, link.id)}
-                        >
-                          🗑️
-                        </button>
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-sm transition-colors hover:bg-blue-100"
-                          data-role="toggle-read"
-                          title={link.read ? 'Mark as unread' : 'Mark as read'}
-                          aria-label={link.read ? 'Mark as unread' : 'Mark as read'}
-                          onClick={e => handleToggleRead(e, link)}
-                        >
-                          {link.read ? '📩' : '✅'}
-                        </button>
-                      </div>
-                    </div>
-                  </a>
-                  {link.note && (
-                    <div className="mt-2 px-4 text-sm text-gray-600">
-                      {link.note}
-                    </div>
-                  )}
-                  <div className="mt-2 px-4 text-xs text-gray-400">
-                    {link.updatedAt}
+              buildTimelineGroups(filteredLinks).map(group => (
+                <div key={`${group.range}-${group.items[0].id}`}>
+                  <div className="sticky top-0 z-10 flex items-center gap-2 bg-white/95 pb-1.5 pt-3 backdrop-blur-sm">
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                      style={{ background: rangeColor(group.range) }}
+                    >
+                      {rangeLabel(group.range)}
+                    </span>
+                    <span className="h-px flex-1 bg-gray-200" />
                   </div>
+                  {group.items.map(link => (
+                    <div key={link.id} className="relative flex gap-3">
+                      <div className="relative flex w-5 shrink-0 justify-center">
+                        <span className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-gray-200" />
+                        <span
+                          className="relative z-[1] mt-6 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-white shadow-sm"
+                          style={{ background: rangeColor(group.range) }}
+                        />
+                      </div>
+                      <div className={`min-w-0 flex-1 py-2 rounded-xl border border-gray-200 transition-all${link.read ? ' bg-gray-100 opacity-60' : ''} link-wrapper`}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-link-id={link.id}
+                          data-link-read={link.read ? '1' : '0'}
+                          className="block p-4 active:scale-[0.98] cursor-pointer text-inherit no-underline hover:cursor-pointer"
+                          onClick={() => handleLinkClick(link)}
+                        >
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h3
+                                className="text-lg font-medium text-gray-900 break-all"
+                                title={link.fullTitle}
+                              >
+                                {link.title}
+                              </h3>
+                            </div>
+                            <div className="flex shrink-0 flex-col items-center gap-2">
+                              <button
+                                type="button"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-red-50 text-sm transition-colors hover:bg-red-100"
+                                title="Delete link"
+                                aria-label="Delete link"
+                                onClick={e => handleDelete(e, link.id)}
+                              >
+                                🗑️
+                              </button>
+                              <button
+                                type="button"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-sm transition-colors hover:bg-blue-100"
+                                data-role="toggle-read"
+                                title={link.read ? 'Mark as unread' : 'Mark as read'}
+                                aria-label={link.read ? 'Mark as unread' : 'Mark as read'}
+                                onClick={e => handleToggleRead(e, link)}
+                              >
+                                {link.read ? '📩' : '✅'}
+                              </button>
+                            </div>
+                          </div>
+                        </a>
+                        {link.note && (
+                          <div className="mt-2 px-4 text-sm text-gray-600">
+                            {link.note}
+                          </div>
+                        )}
+                        <div className="mt-2 px-4 text-xs text-gray-400">
+                          {link.updatedAt}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))
             )}

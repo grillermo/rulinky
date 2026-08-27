@@ -30,7 +30,8 @@ class LinksController < ApplicationController
           fullTitle: helpers.link_display_title_full(link),
           note: link.note,
           read: link.read.to_i == 1,
-          updatedAt: helpers.ms_to_local_time_string(link.updated_at)
+          updatedAt: helpers.ms_to_local_time_string(link.updated_at),
+          updatedAtMs: link.updated_at.to_i
         }
       },
       readCount: @read_links_count,
