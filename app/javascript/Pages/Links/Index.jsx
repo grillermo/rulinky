@@ -61,11 +61,16 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
   const localUnreadCount = linksState.length - localReadCount
   const displayedReadCount = linksState.length > 0 ? localReadCount : readCount
   const displayedUnreadCount = linksState.length > 0 ? localUnreadCount : unreadCount
+  const displayedAllCount = linksState.length > 0 ? linksState.length : readCount + unreadCount
 
   const queryTerms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
 
   const filteredLinks = linksState.filter(link => {
-    const matchesTab = filter === 'read' ? link.read : !link.read || stickyReadIds.has(link.id)
+    const matchesTab = filter === 'all'
+      ? true
+      : filter === 'read'
+        ? link.read
+        : !link.read || stickyReadIds.has(link.id)
     if (!matchesTab) return false
     if (queryTerms.length === 0) return true
     const haystack = `${link.fullTitle || ''} ${link.note || ''} ${link.url || ''}`.toLowerCase()
@@ -316,6 +321,14 @@ export default function LinksIndex({ links, readCount, unreadCount }) {
               }`}
             >
               Read <span>{displayedReadCount}</span>
+            </button>
+            <button
+              onClick={() => setFilter('all')}
+              className={`pl-3 flex-1 py-2 text-sm font-medium rounded-md transition-all hover:cursor-pointer ${
+                filter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              All <span>{displayedAllCount}</span>
             </button>
           </div>
 
