@@ -16,5 +16,5 @@
     "vite": "^6.0.0",
     "vite-plugin-ruby": "^5.0.0"
   },
-  "packageManager": "pnpm@10.30.0"
+  "packageManager": "pnpm@11.20.0"
 }
