@@ -1,4 +1,19 @@
-# Set here rather than inherited from ~/.zshrc, so the app boots in production
-# no matter which shell (or tmux pane) runs this script.
+#!/usr/bin/env bash
+# (Re)start rulinky in tmux session "rulinky", in place, and return. Run by
+# ../server/after-reboot.sh at boot and by ./activate after git-sync lands
+# new code. Production env is set here, not inherited from ~/.zshrc.
+set -euo pipefail
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$APP_DIR"
+SESSION=rulinky
+# shellcheck source=/dev/null
+. "$HOME/c/server/serve-in-place.sh"
 export RAILS_ENV=production
-pnpm run build && rails s -p 3002
+
+echo "==> bundle install";  bundle install --quiet
+echo "==> pnpm install";    pnpm install --frozen-lockfile
+echo "==> pnpm run build";  pnpm run build
+echo "==> db:migrate";      bin/rails db:migrate
+
+serve_pane web 3002 "env RAILS_ENV=production bin/rails server -p 3002"
+serve_attach
