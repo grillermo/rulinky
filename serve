@@ -13,7 +13,7 @@ export RAILS_ENV=production
 echo "==> bundle install";  bundle install --quiet
 echo "==> pnpm install";    pnpm install --frozen-lockfile
 echo "==> pnpm run build";  pnpm run build
-echo "==> db:migrate";      bin/rails db:migrate
+echo "==> db:migrate";      ruby bin/rails db:migrate
 
-serve_pane web 3002 "env RAILS_ENV=production bin/rails server -p 3002"
+serve_pane web 3002 "env RAILS_ENV=production ruby bin/rails server -p 3002"
 serve_attach
