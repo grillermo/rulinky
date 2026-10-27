@@ -1,5 +1,5 @@
 const API_URL = "https://rulinky.chiq.me/api/links";
-const AUTH_TOKEN = "44p9Wq6iJRxp4DE2vp4b3Yw6KWhRjcNohjDetwwRNy4K7cyUcxdwuWTUxVZUJkhWVjU";
+const AUTH_TOKEN = "5qURU4vfLd9fnm5KZ6EzL4Kt";
 const SUCCESS_BADGE_MS = 4000;
 
 chrome.action.onClicked.addListener(async (tab) => {
