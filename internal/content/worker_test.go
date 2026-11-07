@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -136,5 +137,129 @@ func TestWorkerFailsJobWhoseLinkWasDeleted(t *testing.T) {
 	}
 	if status, msg, _, _ := st.JobStatus(ctx, jobID); status != "failed" || msg != "link not found" {
 		t.Fatalf("status=%q msg=%q", status, msg)
+	}
+}
+
+type panicCrawler struct{}
+
+func (panicCrawler) Crawl(context.Context, string) (string, error) { panic("crawler exploded") }
+
+type panicPreviewer struct{}
+
+func (panicPreviewer) Preview(context.Context, string, string) (Preview, error) {
+	panic("previewer exploded")
+}
+
+func TestWorkerRecoversFromPanics(t *testing.T) {
+	cases := map[string]struct {
+		c    Crawler
+		p    Previewer
+		want string
+	}{
+		"crawler":   {panicCrawler{}, &fakePreviewer{}, "crawler exploded"},
+		"previewer": {&fakeCrawler{html: "h"}, panicPreviewer{}, "previewer exploded"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			st, _, jobID := setupJob(t)
+			w := NewWorker(st, tc.c, tc.p, discard)
+			processed, err := w.RunOnce(context.Background())
+			if !processed || err != nil {
+				t.Fatalf("processed=%v err=%v", processed, err)
+			}
+			status, msg, _, _ := st.JobStatus(context.Background(), jobID)
+			if status != "failed" || !strings.Contains(msg, "panic") || !strings.Contains(msg, tc.want) {
+				t.Fatalf("status=%q msg=%q", status, msg)
+			}
+		})
+	}
+}
+
+func TestWorkerRecordsPreviewerError(t *testing.T) {
+	st, _, jobID := setupJob(t)
+	w := NewWorker(st, &fakeCrawler{html: "h"}, &fakePreviewer{err: errors.New("bad preview")}, discard)
+	if processed, err := w.RunOnce(context.Background()); !processed || err != nil {
+		t.Fatalf("processed=%v err=%v", processed, err)
+	}
+	if status, msg, _, _ := st.JobStatus(context.Background(), jobID); status != "failed" || msg != "bad preview" {
+		t.Fatalf("status=%q msg=%q", status, msg)
+	}
+}
+
+func waitForStatus(t *testing.T, st *store.Store, jobID, want string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		status, _, _, _ := st.JobStatus(context.Background(), jobID)
+		if status == want {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("job never reached %q, status %q", want, status)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func TestWorkerNotifyWakesRun(t *testing.T) {
+	st := store.OpenTest(t)
+	ctx := context.Background()
+	u, err := st.FindOrCreateUserByEmail(ctx, "me@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := NewWorker(st, &fakeCrawler{html: "h"}, &fakePreviewer{preview: Preview{Title: "T"}}, discard)
+	w.PollInterval = time.Hour
+
+	runCtx, cancel := context.WithCancel(ctx)
+	done := make(chan error, 1)
+	go func() { done <- w.Run(runCtx) }()
+
+	_, jobID, err := st.CreateLink(ctx, u.ID, "https://a.com", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.Notify()
+	waitForStatus(t, st, jobID, "finished")
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("Run returned %v", err)
+	}
+}
+
+type blockingCrawler struct{ started chan struct{} }
+
+func (b blockingCrawler) Crawl(ctx context.Context, _ string) (string, error) {
+	close(b.started)
+	<-ctx.Done()
+	return "", ctx.Err()
+}
+
+func TestWorkerCancelLeavesJobRunning(t *testing.T) {
+	st, _, jobID := setupJob(t)
+	crawler := blockingCrawler{started: make(chan struct{})}
+	w := NewWorker(st, crawler, &fakePreviewer{}, discard)
+	w.PollInterval = time.Hour
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- w.Run(ctx) }()
+
+	select {
+	case <-crawler.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("crawl never started")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Run returned %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not return after cancel")
+	}
+	if status, _, _, _ := st.JobStatus(context.Background(), jobID); status != "running" {
+		t.Fatalf("status = %q, want running", status)
 	}
 }
