@@ -28,5 +28,5 @@ if ! env RULINKY_ENV=production ./bin/rulinky -check; then
   exit 1
 fi
 
-serve_pane web 3002 "cd '$APP_DIR' && env RULINKY_ENV=production ./bin/rulinky" /up
+serve_pane web 3002 "env RULINKY_ENV=production ./bin/rulinky" /up
 serve_attach
