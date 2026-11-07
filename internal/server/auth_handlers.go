@@ -41,9 +41,7 @@ func (s *Server) handleAuthCreate(w http.ResponseWriter, r *http.Request) {
 	if err := s.OTP.SendOTP(ctx, code); err != nil {
 		s.Logger.Error("OTP delivery failed", "err", err)
 	}
-	sess := s.Sessions.Read(r)
-	sess.AuthEmail = email
-	s.Sessions.Write(w, sess)
+	s.Sessions.Write(w, auth.Session{AuthEmail: email})
 	writeJSON(w, http.StatusOK, map[string]string{"redirect": "/auth/verify"})
 }
 

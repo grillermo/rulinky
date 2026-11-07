@@ -15,11 +15,14 @@ import (
 	"rulinky/internal/store"
 )
 
-type fakeOTP struct{ codes []string }
+type fakeOTP struct {
+	codes []string
+	err   error
+}
 
 func (f *fakeOTP) SendOTP(_ context.Context, code string) error {
 	f.codes = append(f.codes, code)
-	return nil
+	return f.err
 }
 
 type fakeJobs struct{ n int }

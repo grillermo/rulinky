@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"log/slog"
+	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"strings"
@@ -119,5 +121,72 @@ func TestAuthCreateLogsOTP(t *testing.T) {
 	out := buf.String()
 	if !strings.Contains(out, "[OTP]") || !strings.Contains(out, "log@example.com") || !strings.Contains(out, otp.codes[0]) {
 		t.Fatalf("log missing OTP line, email or code: %s", out)
+	}
+}
+
+func decodeCookie(t *testing.T, srv *Server, c *http.Cookie) auth.Session {
+	t.Helper()
+	req := httptest.NewRequest("GET", "/", nil)
+	req.AddCookie(c)
+	return srv.Sessions.Read(req)
+}
+
+func TestAuthCreateSucceedsWhenOTPDeliveryFails(t *testing.T) {
+	srv, otp, _ := newTestServer(t)
+	otp.err = errors.New("slack down")
+	rec := serve(srv, jsonRequest("POST", "/auth", `{"email":"me@example.com"}`))
+	if rec.Code != 200 || decode[map[string]string](t, rec)["redirect"] != "/auth/verify" {
+		t.Fatalf("%d %s", rec.Code, rec.Body.String())
+	}
+	if got := decodeCookie(t, srv, cookieFrom(t, rec)); got.AuthEmail != "me@example.com" {
+		t.Fatalf("pending session: %+v", got)
+	}
+}
+
+func TestAuthVerifyClearsPendingEmailAndSetsUser(t *testing.T) {
+	srv, otp, _ := newTestServer(t)
+	rec := serve(srv, jsonRequest("POST", "/auth", `{"email":"me@example.com"}`))
+	req := jsonRequest("POST", "/auth/verify", `{"code":"`+otp.codes[0]+`"}`)
+	req.AddCookie(cookieFrom(t, rec))
+	rec = serve(srv, req)
+	if rec.Code != 200 {
+		t.Fatalf("%d %s", rec.Code, rec.Body.String())
+	}
+	got := decodeCookie(t, srv, cookieFrom(t, rec))
+	if got.AuthEmail != "" || got.UserID == 0 {
+		t.Fatalf("session after verify: %+v", got)
+	}
+}
+
+func TestAuthVerifyWithoutPendingSessionIs422(t *testing.T) {
+	srv, _, _ := newTestServer(t)
+	rec := serve(srv, jsonRequest("POST", "/auth/verify", `{"code":"123456"}`))
+	if rec.Code != 422 || decode[map[string]map[string]string](t, rec)["errors"]["code"] != "Invalid or expired code" {
+		t.Fatalf("%d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAuthVerifyRejectsReusedCode(t *testing.T) {
+	srv, otp, _ := newTestServer(t)
+	rec := serve(srv, jsonRequest("POST", "/auth", `{"email":"me@example.com"}`))
+	pending := cookieFrom(t, rec)
+	body := `{"code":"` + otp.codes[0] + `"}`
+	req := jsonRequest("POST", "/auth/verify", body)
+	req.AddCookie(pending)
+	if rec := serve(srv, req); rec.Code != 200 {
+		t.Fatalf("first use: %d %s", rec.Code, rec.Body.String())
+	}
+	req = jsonRequest("POST", "/auth/verify", body)
+	req.AddCookie(pending)
+	if rec := serve(srv, req); rec.Code != 422 {
+		t.Fatalf("reuse: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestLoginCookieFlags(t *testing.T) {
+	srv, _, _ := newTestServer(t)
+	c := cookieFrom(t, serve(srv, jsonRequest("POST", "/auth", `{"email":"me@example.com"}`)))
+	if !c.HttpOnly || c.SameSite != http.SameSiteLaxMode || c.Path != "/" {
+		t.Fatalf("cookie flags: %+v", c)
 	}
 }
