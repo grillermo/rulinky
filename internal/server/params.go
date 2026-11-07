@@ -15,6 +15,41 @@ import (
 // readParams merges query parameters with a JSON or form-encoded body (the
 // body wins), like Rails' params.
 func readParams(r *http.Request) (map[string]any, error) {
+	params, err := readRawParams(r)
+	if err != nil {
+		return nil, err
+	}
+	// Postgres rejects NUL in text, which would surface as a 500.
+	if hasNUL(params) {
+		return nil, errNULByte
+	}
+	return params, nil
+}
+
+var errNULByte = errors.New("request parameter contains a NUL byte")
+
+// hasNUL reports whether any key or string value, at any depth, holds U+0000.
+func hasNUL(v any) bool {
+	switch t := v.(type) {
+	case string:
+		return strings.ContainsRune(t, 0)
+	case []any:
+		for _, e := range t {
+			if hasNUL(e) {
+				return true
+			}
+		}
+	case map[string]any:
+		for k, e := range t {
+			if strings.ContainsRune(k, 0) || hasNUL(e) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func readRawParams(r *http.Request) (map[string]any, error) {
 	params := map[string]any{}
 	for k, v := range r.URL.Query() {
 		if len(v) > 0 {

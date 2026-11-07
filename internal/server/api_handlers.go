@@ -39,6 +39,10 @@ func (s *Server) handleAPIIndex(w http.ResponseWriter, r *http.Request, user sto
 	writeJSON(w, http.StatusOK, out)
 }
 
+func apiError(w http.ResponseWriter, status int, msg string) {
+	writeJSON(w, status, map[string]string{"error": msg})
+}
+
 type apiCreated struct {
 	Message string `json:"message"`
 	ID      string `json:"id"`
@@ -55,9 +59,10 @@ func (s *Server) handleAPICreate(w http.ResponseWriter, r *http.Request, user st
 	}
 	link, isString := params["link"].(string)
 	if !isString || strings.TrimSpace(link) == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid link"})
+		apiError(w, http.StatusBadRequest, "Invalid link")
 		return
 	}
+	// Rails stores the link exactly as sent (it only strip-checks for blank), so no trimming here.
 	note := stringParam(params, "note")
 	created, jobID, err := s.Store.CreateLink(r.Context(), user.ID, link, note)
 	if err != nil {
@@ -79,7 +84,7 @@ func (s *Server) handleAPIUpdate(w http.ResponseWriter, r *http.Request, user st
 	id, idOK := params["id"].(string)
 	read, readOK := castBool(params["read"])
 	if !idOK || strings.TrimSpace(id) == "" || !readOK {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid payload"})
+		apiError(w, http.StatusBadRequest, "Invalid payload")
 		return
 	}
 	found, err := s.Store.SetLinkRead(r.Context(), user.ID, id, read)
@@ -88,7 +93,7 @@ func (s *Server) handleAPIUpdate(w http.ResponseWriter, r *http.Request, user st
 		return
 	}
 	if !found {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Link not found"})
+		apiError(w, http.StatusNotFound, "Link not found")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Link updated"})
@@ -102,7 +107,7 @@ func (s *Server) handleAPIDestroy(w http.ResponseWriter, r *http.Request, user s
 	}
 	id, idOK := params["id"].(string)
 	if !idOK || strings.TrimSpace(id) == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid payload"})
+		apiError(w, http.StatusBadRequest, "Invalid payload")
 		return
 	}
 	found, err := s.Store.DeleteLink(r.Context(), user.ID, id)
@@ -111,7 +116,7 @@ func (s *Server) handleAPIDestroy(w http.ResponseWriter, r *http.Request, user s
 		return
 	}
 	if !found {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Link not found"})
+		apiError(w, http.StatusNotFound, "Link not found")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Link deleted"})

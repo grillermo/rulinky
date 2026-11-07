@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"rulinky/internal/auth"
 )
 
 func api(t *testing.T, srv *Server, method, body, authHeader string) *httptest.ResponseRecorder {
@@ -96,6 +98,41 @@ func TestAPICreateFormEncoded(t *testing.T) {
 	}
 }
 
+func TestRejectsNULBytes(t *testing.T) {
+	srv, _, jobs := newTestServer(t)
+	u := createUser(t, srv, "me@example.com")
+	cookie := sessionCookie(t, srv, auth.Session{UserID: u.ID})
+	form := "application/x-www-form-urlencoded"
+
+	cases := []struct {
+		name, method, path, ctype, body string
+		api                             bool
+	}{
+		{"api json", "POST", "/api/links", "application/json", `{"link":"https://a.com/\u0000"}`, true},
+		{"api json note", "POST", "/api/links", "application/json", `{"link":"https://a.com","note":"a\u0000b"}`, true},
+		{"api json nested", "POST", "/api/links", "application/json", `{"link":"https://a.com","x":{"y":["\u0000"]}}`, true},
+		{"api form", "POST", "/api/links", form, "link=https%3A%2F%2Fa.com%2F%00", true},
+		{"api query", "POST", "/api/links?note=%00", "application/json", `{"link":"https://a.com"}`, true},
+		{"web json", "POST", "/links", "application/json", `{"url":"https://a.com/\u0000","note":""}`, false},
+		{"web form", "POST", "/links", form, "url=https%3A%2F%2Fa.com%2F%00&note=", false},
+	}
+	for _, c := range cases {
+		req := httptest.NewRequest(c.method, c.path, strings.NewReader(c.body))
+		req.Header.Set("Content-Type", c.ctype)
+		if c.api {
+			req.Header.Set("Authorization", u.APIToken)
+		} else {
+			req.AddCookie(cookie)
+		}
+		if rec := serve(srv, req); rec.Code != 400 {
+			t.Errorf("%s: %d %s", c.name, rec.Code, rec.Body.String())
+		}
+	}
+	if links, _ := srv.Store.ListLinks(context.Background(), u.ID); len(links) != 0 || jobs.n != 0 {
+		t.Errorf("nothing may be stored: %d links, %d notifies", len(links), jobs.n)
+	}
+}
+
 func TestAPIUpdate(t *testing.T) {
 	srv, _, _ := newTestServer(t)
 	ctx := context.Background()
@@ -124,9 +161,22 @@ func TestAPIUpdate(t *testing.T) {
 	if rec := api(t, srv, "PATCH", `{"id":"nope","read":true}`, u.APIToken); rec.Code != 404 || decode[map[string]string](t, rec)["error"] != "Link not found" {
 		t.Errorf("missing link: %d", rec.Code)
 	}
+	// Make the owner's state deterministic: unread.
+	api(t, srv, "PATCH", `{"id":"`+l.ID+`","read":false}`, u.APIToken)
+	before, _ := srv.Store.ListLinks(ctx, u.ID)
+	if len(before) != 1 || before[0].Read != 0 {
+		t.Fatalf("setup: %+v", before)
+	}
 	other := createUser(t, srv, "other@example.com")
 	if rec := api(t, srv, "PATCH", `{"id":"`+l.ID+`","read":true}`, other.APIToken); rec.Code != 404 {
 		t.Errorf("other user's link: %d", rec.Code)
+	}
+	after, _ := srv.Store.ListLinks(ctx, u.ID)
+	if len(after) != 1 {
+		t.Fatalf("owner's link vanished: %+v", after)
+	}
+	if after[0].Read != before[0].Read || after[0].UpdatedAt != before[0].UpdatedAt {
+		t.Errorf("owner's link changed by another user: before %+v after %+v", before[0], after[0])
 	}
 }
 
@@ -155,7 +205,7 @@ func TestAPIOtherUserCannotDestroyOrOversize(t *testing.T) {
 	ctx := context.Background()
 	owner := createUser(t, srv, "owner@example.com")
 	other := createUser(t, srv, "other@example.com")
-	l, _, _ := srv.Store.CreateLink(ctx, owner.ID, "https://a.com", "")
+	l, jobID, _ := srv.Store.CreateLink(ctx, owner.ID, "https://a.com", "")
 
 	if rec := api(t, srv, "DELETE", `{"id":"`+l.ID+`"}`, other.APIToken); rec.Code != 404 {
 		t.Errorf("other user's delete: %d", rec.Code)
@@ -163,8 +213,15 @@ func TestAPIOtherUserCannotDestroyOrOversize(t *testing.T) {
 	if links, _ := srv.Store.ListLinks(ctx, owner.ID); len(links) != 1 {
 		t.Errorf("link must survive, have %d", len(links))
 	}
-	if links, _ := srv.Store.ListLinks(ctx, owner.ID); links[0].Read != 0 {
+	links, _ := srv.Store.ListLinks(ctx, owner.ID)
+	if len(links) != 1 {
+		t.Fatalf("link must survive, have %d", len(links))
+	}
+	if links[0].Read != 0 {
 		t.Errorf("link must stay unread")
+	}
+	if _, _, found, _ := srv.Store.JobStatus(ctx, jobID); !found {
+		t.Errorf("owner's job row must survive another user's delete")
 	}
 	big := `{"link":"` + strings.Repeat("a", 2<<20) + `"}`
 	if rec := api(t, srv, "POST", big, owner.APIToken); rec.Code != 413 {
