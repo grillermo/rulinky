@@ -19,5 +19,14 @@ echo "==> pnpm install";   pnpm install --frozen-lockfile
 echo "==> pnpm run build"; pnpm run build
 echo "==> go build";       go build -o bin/rulinky ./cmd/rulinky
 
+# Preflight with the real run's env and working dir (the binary loads its
+# dotenv files from here itself): a bad config or database aborts the deploy
+# here, BEFORE serve_pane parks/kills the running service.
+echo "==> preflight (rulinky -check)"
+if ! env RULINKY_ENV=production ./bin/rulinky -check; then
+  echo "ERROR: rulinky -check failed (config, database or web build). Not deploying; the previous service keeps running."
+  exit 1
+fi
+
 serve_pane web 3002 "cd '$APP_DIR' && env RULINKY_ENV=production ./bin/rulinky" /up
 serve_attach

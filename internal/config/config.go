@@ -22,9 +22,15 @@ type Config struct {
 
 // FromEnv builds the config from environment variables (call LoadDotenv
 // first). An empty variable counts as unset.
-func FromEnv() (Config, error) {
+func FromEnv() (Config, error) { return fromEnv(true) }
+
+// FromEnvNoSecret is FromEnv without the SESSION_SECRET requirement, for the
+// -crawl debug path that never serves HTTP.
+func FromEnvNoSecret() (Config, error) { return fromEnv(false) }
+
+func fromEnv(requireSecret bool) (Config, error) {
 	secret := os.Getenv("SESSION_SECRET")
-	if len(secret) < 32 {
+	if requireSecret && len(secret) < 32 {
 		return Config{}, errors.New("SESSION_SECRET must be set to at least 32 characters (generate one with: openssl rand -hex 32)")
 	}
 	home, err := os.UserHomeDir()

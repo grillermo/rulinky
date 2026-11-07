@@ -73,3 +73,10 @@ func TestFromEnvRequiresLongSessionSecret(t *testing.T) {
 		t.Fatal("expected an error for a short SESSION_SECRET")
 	}
 }
+
+func TestFromEnvNoSecretSkipsSecretCheck(t *testing.T) {
+	clearEnv(t)
+	if _, err := FromEnvNoSecret(); err != nil {
+		t.Fatalf("crawl path must not need SESSION_SECRET: %v", err)
+	}
+}
