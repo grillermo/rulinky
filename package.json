@@ -12,6 +12,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^3.4.19",
     "vite": "^6.0.0"
   },
   "packageManager": "pnpm@11.20.0"

@@ -1,3 +1,4 @@
+import './index.css'
 import { createRoot } from 'react-dom/client'
 import AuthNew from './pages/AuthNew.jsx'
 import AuthVerify from './pages/AuthVerify.jsx'
