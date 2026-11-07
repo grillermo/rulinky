@@ -16,6 +16,7 @@ export default function AuthVerify({ email }) {
         <input
           type="text"
           inputMode="numeric"
+          autoComplete="one-time-code"
           pattern="\d*"
           maxLength={6}
           value={data.code}
@@ -24,8 +25,8 @@ export default function AuthVerify({ email }) {
           className="w-full border rounded px-3 py-2 tracking-widest text-center"
           autoFocus
         />
-        {errors.code && <p className="text-red-600 text-sm">{errors.code}</p>}
-        {errors.base && <p className="text-red-600 text-sm">{errors.base}</p>}
+        {errors.code && <p role="alert" className="text-red-600 text-sm">{errors.code}</p>}
+        {errors.base && <p role="alert" className="text-red-600 text-sm">{errors.base}</p>}
         <button
           type="submit"
           disabled={processing}

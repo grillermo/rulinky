@@ -47,8 +47,10 @@ function LinkAnchor({ href, children, ...rest }) {
   return <a href={href} target="_blank" rel="noopener noreferrer" {...rest}>{children}</a>
 }
 
+const NO_LINKS = []
+
 export default function LinksIndex({ links: linksProp, readCount = 0, unreadCount = 0, apiToken }) {
-  const links = Array.isArray(linksProp) ? linksProp : []
+  const links = Array.isArray(linksProp) ? linksProp : NO_LINKS
   const [filter, setFilter] = useState('unread')
   const [query, setQuery] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -174,6 +176,7 @@ export default function LinksIndex({ links: linksProp, readCount = 0, unreadCoun
 
   async function handleCreate(e) {
     e.preventDefault()
+    if (processing) return
     const result = await submit('POST', '/links')
     if (!result.ok) return
     reset()

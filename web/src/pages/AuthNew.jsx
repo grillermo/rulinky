@@ -14,14 +14,15 @@ export default function AuthNew() {
         <h1 className="text-xl font-semibold">Sign in to Rulinky</h1>
         <input
           type="email"
+          autoComplete="email"
           value={data.email}
           onChange={e => setData('email', e.target.value)}
           placeholder="you@example.com"
           className="w-full border rounded px-3 py-2"
           autoFocus
         />
-        {errors.email && <p className="text-red-600 text-sm">{errors.email}</p>}
-        {errors.base && <p className="text-red-600 text-sm">{errors.base}</p>}
+        {errors.email && <p role="alert" className="text-red-600 text-sm">{errors.email}</p>}
+        {errors.base && <p role="alert" className="text-red-600 text-sm">{errors.base}</p>}
         <button
           type="submit"
           disabled={processing}
