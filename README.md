@@ -1,49 +1,28 @@
-# Rulinky (Rails port of `eslabony`)
+# Rulinky
 
-Simple link-saver Rails app that matches the `eslabony` Next.js behavior:
+Personal read-it-later link saver, served at https://rulinky.chiq.me from the macmini.
+One Go binary (`cmd/rulinky`) with the React UI (`web/`) embedded. Postgres.
+What it does: `docs/PRODUCT.md`.
 
-- Postgres via ActiveRecord (see `config/database.yml`)
-- HTML UI at `/` with Read/Unread tabs
-- JSON API at `/api/links`:
-  - `GET` (no auth): list links
-  - `POST` (auth): create link and enqueue a background scrape job
-  - `GET /api/links/jobs/:id` (no auth): get the scrape job status for a link
-  - `PATCH` (auth): `{ id, read: true|false }`
-  - `DELETE` (auth): `{ id }`
+## Build and run
 
-## Ruby
+    pnpm install && pnpm run build      # web/dist
+    go build -o bin/rulinky ./cmd/rulinky
+    ./bin/rulinky                        # reads the dotenv files, listens on $PORT (3002)
 
-Uses Ruby `3.4.7` (see `.ruby-version`).
+Production: `./serve` (tmux session `rulinky`), run by git-sync's `./activate`.
 
-## Auth token
+## Environment
 
-Set `NEXT_PUBLIC_AUTH_TOKEN` (or `AUTH_TOKEN`) in the environment.
-Set `FIRECRAWL_API_KEY` for general link scraping.
-Set `APIFY_API_KEY` for `x.com` / `twitter.com` links, which now use Apify's `apidojo/twitter-scraper-lite` actor.
+DATABASE_URL or DATABASE_HOST/PORT/USER/PASSWORD/NAME, SESSION_SECRET (32+ chars),
+SLACK_OTP_WEBHOOK_URL, READITSOON_EMAIL, EGO_BROWSER_BIN, RULINKY_ENV=production,
+RULINKY_DISABLE_WORKER=1.
 
-This repo includes a `.env` / `.env.local` loader at `config/initializers/load_env_local.rb` so `bin/rails s` will pick them up in development. `.env.local` overrides `.env`, and real shell environment variables still win.
+## Tests
 
-## Run
+    pnpm test
+    go test ./...      # needs TEST_DATABASE_URL, e.g. postgres://grillermo@localhost:5432/rulinky_test?sslmode=disable
 
-```sh
-cd /Users/grillermo/c/rulinky/rulinky
-bin/rails db:create db:migrate
-bin/rails s
-```
+## Debug the crawler
 
-## SQLite -> Postgres migration
-
-1) Export existing SQLite data to CSV:
-
-```sh
-cd /Users/grillermo/c/rulinky/rulinky
-/Users/grillermo/.rbenv/shims/ruby script/export_links_to_csv.rb tmp/links.csv
-```
-
-2) Import CSV into Postgres:
-
-```sh
-cd /Users/grillermo/c/rulinky/rulinky
-bin/rails db:create db:migrate
-bin/rails runner script/import_links_from_csv.rb tmp/links.csv
-```
+    ./bin/rulinky -crawl https://example.com   # opens the page in ego-browser (your logged-in browser)

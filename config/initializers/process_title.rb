@@ -1,1 +1,0 @@
-Process.setproctitle("rulinky")

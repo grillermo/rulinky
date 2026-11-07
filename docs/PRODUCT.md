@@ -1,5 +1,13 @@
 # Rulinky — Product Spec
 
+> **Status (2026-11-07):** the Rails app described below was replaced by a Go binary on the same
+> database and the Rails code was removed (it stays in git history before the `go-rewrite` merge).
+> This document is the original behavior spec. Two things differ in Go: the crawler runs
+> `ego-browser nodejs` (the user's own logged-in browser) instead of killing Chrome and copying a
+> profile, so `CHROME_*` became `EGO_BROWSER_BIN`; and sign-in needs `SESSION_SECRET`.
+> See `README.md` for how to build and run it.
+
+
 This document lists what Rulinky does today, the Rails 8.1 app, as of commit `c8383ec`. It is
 the parity checklist for the Go rewrite. The goal of the rewrite is lower RAM use. Behavior
 should stay the same unless a section marked **Rewrite decision** says otherwise.
@@ -264,7 +272,7 @@ always win. Format: `KEY=VALUE`, `#` comments, optional double quotes around the
 | `HOSTS` | comma-separated extra allowed `Host` headers (Rails host authorization) |
 | `SLACK_OTP_WEBHOOK_URL` | OTP delivery |
 | `READITSOON_EMAIL` | readitsoon preview form field |
-| `CHROME_REAL_USER_DATA_DIR`, `CHROME_USER_DATA_DIR`, `CHROME_PROFILE_DIRECTORY` | crawler |
+| `CHROME_REAL_USER_DATA_DIR`, `CHROME_USER_DATA_DIR`, `CHROME_PROFILE_DIRECTORY` | Rails crawler only; Go uses `EGO_BROWSER_BIN` |
 | `INFORMANT_API_TOKEN` | rails-informant MCP access |
 | `RAILS_LOG_LEVEL`, `RAILS_MAX_THREADS` | Rails-specific |
 | `SECRET_KEY_BASE` / `config/master.key` | session cookie encryption |
