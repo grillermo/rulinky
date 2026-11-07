@@ -131,3 +131,30 @@ func TestSlackSkipsWithoutWebhookAndReportsErrors(t *testing.T) {
 		t.Fatal("expected an error on HTTP 500")
 	}
 }
+
+func TestSlackSendOTPHonorsContextDeadline(t *testing.T) {
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	defer srv.Close()
+	defer close(release)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		done <- (SlackNotifier{WebhookURL: srv.URL}).SendOTP(ctx, "123456")
+	}()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("expected an error from a blocked webhook")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("SendOTP hung past its context deadline")
+	}
+}

@@ -6,7 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
+
+// defaultSlackClient bounds a hung webhook call when no Client is injected.
+var defaultSlackClient = &http.Client{Timeout: 10 * time.Second}
 
 // SlackNotifier posts OTP codes to a Slack incoming webhook. With no
 // WebhookURL it does nothing (the code is still logged by the caller).
@@ -27,7 +31,7 @@ func (n SlackNotifier) SendOTP(ctx context.Context, code string) error {
 	req.Header.Set("Content-Type", "application/json")
 	client := n.Client
 	if client == nil {
-		client = http.DefaultClient
+		client = defaultSlackClient
 	}
 	resp, err := client.Do(req)
 	if err != nil {
