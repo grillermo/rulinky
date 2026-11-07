@@ -86,3 +86,8 @@ project/
 /config/credentials/*.enc
 
 .tokensave
+
+# Go build
+/bin/rulinky
+/web/dist/*
+!/web/dist/.gitkeep
