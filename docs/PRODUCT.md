@@ -331,7 +331,6 @@ the fetch job, `User` OTP logic, `ReaditsoonPreview` parsing, the Slack notifier
   routes, the Dockerfile, the legacy scripts, and the stale README auth claims.
 - **Fix:** the `fullTitle` fallback (§4.2), the copy list of profile files (§6), and job
   concurrency plus persistence (§6).
-- **Open question:** the frontend. Either keep React + Vite (a small JSON endpoint replaces
-  Inertia props, and the HTML redirects become `fetch` calls), or server-render with Go
-  `html/template` plus a little vanilla JS. Server rendering removes the Node build step
-  entirely.
+- **Frontend (decided 2026-11-07):** keep React + Vite. Reuse the existing JSX. Vite builds it
+  at build time and the output is embedded in the Go binary. A small JSON endpoint replaces the
+  Inertia props, and the Inertia form posts and redirects become `fetch` calls.
