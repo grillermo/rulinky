@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 # (Re)start rulinky in tmux session "rulinky", in place, and return. Run by
 # ../server/after-reboot.sh at boot and by ./activate after git-sync lands
-# new code. Production env is set here, not inherited from ~/.zshrc.
+# new code. The Go binary loads its dotenv files from this directory, and they
+# (or the environment) must define SESSION_SECRET (>= 32 chars, generate with
+# openssl rand -hex 32) and the database settings (DATABASE_URL or
+# DATABASE_HOST/USER/PASSWORD/NAME). The binary refuses to start without them.
 set -euo pipefail
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$APP_DIR"
+# shellcheck disable=SC2034 # read by serve-in-place.sh
 SESSION=rulinky
 # shellcheck source=/dev/null
 . "$HOME/c/server/serve-in-place.sh"
-export RAILS_ENV=production
+# vendor/ is tracked (Rails), so go must not treat it as a Go vendor directory.
+export GOFLAGS=-mod=mod
 
-echo "==> bundle install";  bundle install --quiet
-echo "==> pnpm install";    pnpm install --frozen-lockfile
-echo "==> pnpm run build";  pnpm run build
-echo "==> db:migrate";      ruby bin/rails db:migrate
+echo "==> pnpm install";   pnpm install --frozen-lockfile
+echo "==> pnpm run build"; pnpm run build
+echo "==> go build";       go build -o bin/rulinky ./cmd/rulinky
 
-serve_pane web 3002 "env RAILS_ENV=production ruby bin/rails server -p 3002"
+serve_pane web 3002 "cd '$APP_DIR' && env RULINKY_ENV=production ./bin/rulinky" /up
 serve_attach
