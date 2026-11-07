@@ -1,47 +1,27 @@
 package content
 
 import (
-	"os"
-	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
-func mustWrite(t *testing.T, path, body string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
+func TestParseEgoOutput(t *testing.T) {
+	html, err := parseEgoOutput("noise\nRULINKY_HTML:\"<h1>hi\\n</h1>\"\n")
+	if err != nil || html != "<h1>hi\n</h1>" {
+		t.Fatalf("html=%q err=%v", html, err)
 	}
-	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
-		t.Fatal(err)
+	if _, err := parseEgoOutput("RULINKY_ERR:\"boom\""); err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Fatalf("err=%v", err)
+	}
+	if _, err := parseEgoOutput("nothing"); err == nil {
+		t.Fatal("want error")
 	}
 }
 
-func TestSyncProfileCopiesSessionFiles(t *testing.T) {
-	real, auto := t.TempDir(), t.TempDir()
-	mustWrite(t, filepath.Join(real, "Default", "Cookies"), "cookies")
-	mustWrite(t, filepath.Join(real, "Default", "Local Storage", "leveldb", "000003.log"), "ls")
-	mustWrite(t, filepath.Join(real, "Default", "IndexedDB", "site", "data"), "idb")
-	mustWrite(t, filepath.Join(auto, "Default", "Local Storage", "stale"), "old")
-
-	c := &ChromeCrawler{RealUserDataDir: real, UserDataDir: auto, Profile: "Default"}
-	if err := c.syncProfile(); err != nil {
-		t.Fatal(err)
-	}
-
-	for path, want := range map[string]string{
-		"Cookies":                          "cookies",
-		"Local Storage/leveldb/000003.log": "ls",
-		"IndexedDB/site/data":              "idb",
-	} {
-		got, err := os.ReadFile(filepath.Join(auto, "Default", path))
-		if err != nil || string(got) != want {
-			t.Errorf("%s: got %q err %v", path, got, err)
-		}
-	}
-	if _, err := os.Stat(filepath.Join(auto, "Default", "Local Storage", "stale")); !os.IsNotExist(err) {
-		t.Error("stale file from the previous copy was kept")
-	}
-	if _, err := os.Stat(filepath.Join(auto, "Default", "Session Storage")); !os.IsNotExist(err) {
-		t.Error("missing source must be skipped, not created")
+func TestEgoScriptEscapesURL(t *testing.T) {
+	s := egoScript(`https://x.test/?q="a";alert(1)`, 5*time.Second)
+	if !strings.Contains(s, `"https://x.test/?q=\"a\";alert(1)"`) || !strings.Contains(s, "timeout: 5000") {
+		t.Fatalf("script:\n%s", s)
 	}
 }

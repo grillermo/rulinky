@@ -217,8 +217,8 @@ func loadPages() (fs.FS, *server.Pages, error) {
 }
 
 func run() error {
-	crawlURL := flag.String("crawl", "", "crawl one URL with Chrome + readitsoon, print the result and exit (kills running Chrome)")
-	check := flag.Bool("check", false, "verify config, database and web build, print 'config ok' and exit (no worker, port or Chrome)")
+	crawlURL := flag.String("crawl", "", "crawl one URL with ego-browser + readitsoon, print the result and exit")
+	check := flag.Bool("check", false, "verify config, database and web build, print 'config ok' and exit (no worker, port or browser)")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -240,12 +240,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	crawler := &content.ChromeCrawler{
-		RealUserDataDir: cfg.ChromeRealUserDataDir,
-		UserDataDir:     cfg.ChromeUserDataDir,
-		Profile:         cfg.ChromeProfileDirectory,
-		Logger:          logger,
-	}
+	crawler := &content.EgoCrawler{Bin: cfg.EgoBrowserBin, Logger: logger}
 	previewer := content.NewReaditsoon(cfg.ReaditsoonEmail)
 
 	if *crawlURL != "" {

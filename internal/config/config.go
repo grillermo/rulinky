@@ -8,16 +8,14 @@ import (
 )
 
 type Config struct {
-	Port                   string
-	DatabaseURL            string
-	SessionSecret          []byte
-	Production             bool
-	DisableWorker          bool
-	SlackOTPWebhookURL     string
-	ReaditsoonEmail        string
-	ChromeRealUserDataDir  string
-	ChromeUserDataDir      string
-	ChromeProfileDirectory string
+	Port               string
+	DatabaseURL        string
+	SessionSecret      []byte
+	Production         bool
+	DisableWorker      bool
+	SlackOTPWebhookURL string
+	ReaditsoonEmail    string
+	EgoBrowserBin      string
 }
 
 // FromEnv builds the config from environment variables (call LoadDotenv
@@ -38,16 +36,14 @@ func fromEnv(requireSecret bool) (Config, error) {
 		return Config{}, err
 	}
 	return Config{
-		Port:                   envOr("PORT", "3002"),
-		DatabaseURL:            databaseURL(),
-		SessionSecret:          []byte(secret),
-		Production:             os.Getenv("RULINKY_ENV") == "production",
-		DisableWorker:          os.Getenv("RULINKY_DISABLE_WORKER") == "1",
-		SlackOTPWebhookURL:     os.Getenv("SLACK_OTP_WEBHOOK_URL"),
-		ReaditsoonEmail:        envOr("READITSOON_EMAIL", "guillermo.siliceo@kindle.com"),
-		ChromeRealUserDataDir:  envOr("CHROME_REAL_USER_DATA_DIR", filepath.Join(home, "Library/Application Support/Google/Chrome")),
-		ChromeUserDataDir:      envOr("CHROME_USER_DATA_DIR", filepath.Join(home, "Library/Application Support/Google/ChromeRulinky")),
-		ChromeProfileDirectory: envOr("CHROME_PROFILE_DIRECTORY", "Default"),
+		Port:               envOr("PORT", "3002"),
+		DatabaseURL:        databaseURL(),
+		SessionSecret:      []byte(secret),
+		Production:         os.Getenv("RULINKY_ENV") == "production",
+		DisableWorker:      os.Getenv("RULINKY_DISABLE_WORKER") == "1",
+		SlackOTPWebhookURL: os.Getenv("SLACK_OTP_WEBHOOK_URL"),
+		ReaditsoonEmail:    envOr("READITSOON_EMAIL", "guillermo.siliceo@kindle.com"),
+		EgoBrowserBin:      envOr("EGO_BROWSER_BIN", filepath.Join(home, ".local/bin/ego-browser")),
 	}, nil
 }
 

@@ -11,7 +11,7 @@ func clearEnv(t *testing.T) {
 	for _, k := range []string{"DATABASE_URL", "DATABASE_HOST", "DATABASE_PORT", "DATABASE_USER",
 		"DATABASE_PASSWORD", "DATABASE_NAME", "SESSION_SECRET", "PORT", "RULINKY_ENV",
 		"READITSOON_EMAIL", "SLACK_OTP_WEBHOOK_URL", "RULINKY_DISABLE_WORKER",
-		"CHROME_REAL_USER_DATA_DIR", "CHROME_USER_DATA_DIR", "CHROME_PROFILE_DIRECTORY"} {
+		"EGO_BROWSER_BIN"} {
 		t.Setenv(k, "")
 	}
 }
@@ -42,10 +42,8 @@ func TestFromEnvDefaults(t *testing.T) {
 		t.Errorf("ReaditsoonEmail = %q", cfg.ReaditsoonEmail)
 	}
 	home, _ := os.UserHomeDir()
-	if cfg.ChromeRealUserDataDir != filepath.Join(home, "Library/Application Support/Google/Chrome") ||
-		cfg.ChromeUserDataDir != filepath.Join(home, "Library/Application Support/Google/ChromeRulinky") ||
-		cfg.ChromeProfileDirectory != "Default" {
-		t.Errorf("chrome defaults wrong: %+v", cfg)
+	if cfg.EgoBrowserBin != filepath.Join(home, ".local/bin/ego-browser") {
+		t.Errorf("ego-browser default wrong: %+v", cfg)
 	}
 }
 

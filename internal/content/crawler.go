@@ -1,31 +1,30 @@
 package content
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
-	"io/fs"
+	"fmt"
 	"log/slog"
-	"os"
 	"os/exec"
-	"path/filepath"
+	"strings"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
-// ChromeCrawler renders a page in the user's real (logged-in) Chrome profile.
-// Chrome refuses DevTools on its default user-data-dir, so the session files
-// are copied to a separate automation dir first. Every running Chrome is
-// killed first, so its profile files are complete on disk.
-type ChromeCrawler struct {
-	RealUserDataDir string
-	UserDataDir     string
-	Profile         string
+// EgoCrawler renders a page in ego-browser, the user's own Chromium-based
+// browser, so pages open with their real logged-in session. It runs a short
+// `ego-browser nodejs` script per crawl; no browser is killed or restarted.
+type EgoCrawler struct {
+	Bin             string // ego-browser executable; default "ego-browser"
 	PageLoadTimeout time.Duration
 	Logger          *slog.Logger
 }
 
-var profileEntries = []string{"Cookies", "Local Storage", "Session Storage", "IndexedDB"}
+const (
+	egoHTMLPrefix = "RULINKY_HTML:"
+	egoErrPrefix  = "RULINKY_ERR:"
+)
 
 // cleanJS is the readitsoon bookmarklet's cleaning step.
 const cleanJS = `(function () {
@@ -50,7 +49,24 @@ const cleanJS = `(function () {
   return "<!DOCTYPE html>\n" + clone.outerHTML;
 })()`
 
-func (c *ChromeCrawler) Crawl(ctx context.Context, pageURL string) (string, error) {
+func egoScript(pageURL string, timeout time.Duration) string {
+	u, _ := json.Marshal(pageURL) // a JSON string is a valid JS string literal
+	clean, _ := json.Marshal(cleanJS)
+	return fmt.Sprintf(`const task = await taskSpace("rulinky crawl");
+const page = task.page("p1");
+try {
+  await page.goto(%s, { timeout: %d });
+  const html = await page.evaluate(%s);
+  console.log(%q + JSON.stringify(html));
+  await task.finish({ keep: [] });
+} catch (e) {
+  console.log(%q + JSON.stringify(String((e && e.message) || e)));
+  process.exitCode = 1;
+}
+`, u, timeout.Milliseconds(), clean, egoHTMLPrefix, egoErrPrefix)
+}
+
+func (c *EgoCrawler) Crawl(ctx context.Context, pageURL string) (string, error) {
 	logger := c.Logger
 	if logger == nil {
 		logger = slog.Default()
@@ -59,97 +75,49 @@ func (c *ChromeCrawler) Crawl(ctx context.Context, pageURL string) (string, erro
 	if timeout == 0 {
 		timeout = 60 * time.Second
 	}
-
-	killChrome(ctx, logger)
-	if err := c.syncProfile(); err != nil {
-		return "", err
+	bin := c.Bin
+	if bin == "" {
+		bin = "ego-browser"
 	}
 
-	allocCtx, cancelAlloc := chromedp.NewExecAllocator(ctx,
-		chromedp.UserDataDir(c.UserDataDir),
-		chromedp.Flag("profile-directory", c.Profile),
-		chromedp.NoFirstRun,
-		chromedp.NoDefaultBrowserCheck,
-		chromedp.Flag("no-restore-last-session", true),
-		chromedp.Flag("disable-session-crashed-bubble", true),
-		chromedp.Flag("disable-sync", true),
-	)
-	defer cancelAlloc() // kills the Chrome we started
-	tabCtx, cancelTab := chromedp.NewContext(allocCtx)
-	defer cancelTab()
-
-	// Start the browser on a context without a deadline; a timeout on the
-	// first Run would tie Chrome's lifetime to it.
-	if err := chromedp.Do(tabCtx); err != nil {
-		return "", err
-	}
-	navCtx, cancelNav := context.WithTimeout(tabCtx, timeout)
-	defer cancelNav()
+	runCtx, cancel := context.WithTimeout(ctx, timeout+30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(runCtx, bin, "nodejs")
+	cmd.Stdin = strings.NewReader(egoScript(pageURL, timeout))
+	var out, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &stderr
 
 	logger.Info("crawler navigating", "url", pageURL)
-	if err := chromedp.Do(navCtx, chromedp.Navigate(pageURL)); err != nil {
-		return "", err
-	}
-	html, err := chromedp.Run(navCtx, chromedp.Evaluate[string](cleanJS))
+	runErr := cmd.Run()
+	html, err := parseEgoOutput(out.String() + "\n" + stderr.String()) // ego-browser may print to either stream
 	if err != nil {
-		return "", err
+		if runErr != nil {
+			return "", fmt.Errorf("ego-browser: %w: %s", runErr, strings.TrimSpace(stderr.String()+" "+out.String()))
+		}
+		return "", fmt.Errorf("%w (output: %.300q)", err, strings.TrimSpace(stderr.String()+" "+out.String()))
 	}
 	logger.Info("crawler done", "html_bytes", len(html))
 	return html, nil
 }
 
-// syncProfile replaces the automation profile's session files with fresh
-// copies from the real profile. Missing sources are skipped.
-func (c *ChromeCrawler) syncProfile() error {
-	src := filepath.Join(c.RealUserDataDir, c.Profile)
-	dst := filepath.Join(c.UserDataDir, c.Profile)
-	if err := os.MkdirAll(dst, 0o755); err != nil {
-		return err
-	}
-	for _, name := range profileEntries {
-		from, to := filepath.Join(src, name), filepath.Join(dst, name)
-		info, err := os.Stat(from)
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if err := os.RemoveAll(to); err != nil {
-			return err
-		}
-		if info.IsDir() {
-			err = os.CopyFS(to, os.DirFS(from))
-		} else {
-			err = copyFile(from, to)
-		}
-		if err != nil {
-			return err
+// parseEgoOutput finds the result line the script printed.
+func parseEgoOutput(out string) (string, error) {
+	for _, line := range strings.Split(out, "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, egoHTMLPrefix):
+			var html string
+			if err := json.Unmarshal([]byte(strings.TrimPrefix(line, egoHTMLPrefix)), &html); err != nil {
+				return "", err
+			}
+			return html, nil
+		case strings.HasPrefix(line, egoErrPrefix):
+			var msg string
+			_ = json.Unmarshal([]byte(strings.TrimPrefix(line, egoErrPrefix)), &msg)
+			return "", errors.New("ego-browser: " + msg)
 		}
 	}
-	return nil
+	return "", errors.New("ego-browser: no result from script")
 }
 
-func copyFile(from, to string) error {
-	data, err := os.ReadFile(from)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(to, data, 0o600)
-}
-
-// killChrome quits every running Google Chrome and waits up to 15s for it to exit.
-func killChrome(ctx context.Context, logger *slog.Logger) {
-	logger.Info("crawler killing Chrome")
-	_ = exec.CommandContext(ctx, "pkill", "-i", "Google Chrome").Run()
-	deadline := time.Now().Add(15 * time.Second)
-	for time.Now().Before(deadline) {
-		if exec.CommandContext(ctx, "pgrep", "-i", "Google Chrome").Run() != nil {
-			break
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
-	time.Sleep(500 * time.Millisecond)
-}
-
-var _ Crawler = (*ChromeCrawler)(nil)
+var _ Crawler = (*EgoCrawler)(nil)

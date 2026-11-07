@@ -19,7 +19,7 @@ type Previewer interface {
 	Preview(ctx context.Context, html, pageURL string) (Preview, error)
 }
 
-// Worker processes content jobs one at a time, so only one Chrome runs at once.
+// Worker processes content jobs one at a time, so only one crawl runs at once.
 type Worker struct {
 	Store        *store.Store
 	Crawler      Crawler

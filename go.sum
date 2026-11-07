@@ -2,15 +2,9 @@ github.com/PuerkitoBio/goquery v1.13.0 h1:mqHbjD7Jmnul4DTR24LKTjo1uUmHUh072kteGV
 github.com/PuerkitoBio/goquery v1.13.0/go.mod h1:Hip5mdBL8K2wEGKJdr27sRaNwIdDajmCwB/ExUPwW+g=
 github.com/andybalholm/cascadia v1.3.4 h1:vM2lgh0Vru9Vwyfm4cQqWP2HHMW0u0+2PAW7Q38Qufg=
 github.com/andybalholm/cascadia v1.3.4/go.mod h1:BLRmbRjpEtNKieZOCCvYj4RqN+KRA41GBe/5O+G93kM=
-github.com/chromedp/cdproto v0.159.0 h1:wepTaKq5AGTwIxXh6h5bESQcvcfnSb2ItnFChA62/b8=
-github.com/chromedp/cdproto v0.159.0/go.mod h1:h68JaIuFr9o3yiayxEYhBdvaxgYO3shDrPSYhNlyfu0=
-github.com/chromedp/chromedp v0.23.0 h1:iNGzFz+exVgG4OynS2CnYzlAjHiOFW++fUPbbmSwy0w=
-github.com/chromedp/chromedp v0.23.0/go.mod h1:hJcPsoPrgxu4ulIXhO1WmtKjosCD8jbZh0+TeVFsod8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/go-json-experiment/json v0.0.0-20260213210345-44df1a37e875 h1:XGPtjxqp0FS8jj1Z7QGcSOSgyq1fUPjNyJXvi3KfI4A=
-github.com/go-json-experiment/json v0.0.0-20260213210345-44df1a37e875/go.mod h1:uNVvRXArCGbZ508SxYYTC5v1JWoz2voff5pm25jU1Ok=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
