@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -21,7 +22,7 @@ func readParams(r *http.Request) (map[string]any, error) {
 		}
 	}
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -83,6 +84,7 @@ func castBool(v any) (value, ok bool) {
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(body)
 }
@@ -96,7 +98,22 @@ func wantsJSON(r *http.Request) bool {
 		strings.HasPrefix(r.Header.Get("Content-Type"), "application/json")
 }
 
+// writeParamsError answers a readParams failure: 413 for an oversized body
+// (see limitBody), 400 for anything unparseable.
+func writeParamsError(w http.ResponseWriter, err error) {
+	var tooBig *http.MaxBytesError
+	if errors.As(err, &tooBig) {
+		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "Request body too large"})
+		return
+	}
+	writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Bad request"})
+}
+
 // clientIP prefers Cloudflare's header (the app sits behind a tunnel).
+//
+// WARNING: it trusts the client-supplied CF-Connecting-IP / X-Forwarded-For
+// headers, so the value is spoofable. Use it for recording only, never for
+// rate limits, lockouts or any other security decision.
 func clientIP(r *http.Request) string {
 	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
 		return ip

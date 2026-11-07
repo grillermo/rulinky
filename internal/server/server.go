@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"path"
 	"strings"
 
 	"rulinky/internal/auth"
@@ -53,7 +54,7 @@ func (s *Server) Handler() http.Handler {
 
 	mux.Handle("GET /", s.staticHandler())
 
-	return s.recoverer(s.logRequests(s.securityHeaders(mux)))
+	return s.recoverer(s.logRequests(s.securityHeaders(s.limitBody(mux))))
 }
 
 func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
@@ -61,10 +62,28 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(`<!DOCTYPE html><html><body style="background-color: green"></body></html>`))
 }
 
+// staticHandler serves real asset files only: no directory listings, no
+// dotfiles, and no raw index.html (its PAGE_DATA marker is only filled in by
+// Pages, which serves every HTML page).
 func (s *Server) staticHandler() http.Handler {
 	files := http.FileServerFS(s.Static)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/assets/") {
+		name := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
+		if name == "" || name == "index.html" || strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		for _, seg := range strings.Split(name, "/") {
+			if strings.HasPrefix(seg, ".") {
+				http.NotFound(w, r)
+				return
+			}
+		}
+		if info, err := fs.Stat(s.Static, name); err != nil || info.IsDir() {
+			http.NotFound(w, r)
+			return
+		}
+		if strings.HasPrefix(name, "assets/") {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 		}
 		files.ServeHTTP(w, r)

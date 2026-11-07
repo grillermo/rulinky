@@ -73,6 +73,9 @@ func (s *Server) securityHeaders(next http.Handler) http.Handler {
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Frame-Options", "SAMEORIGIN")
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		// 'unsafe-inline' scripts are needed for the inline window.__PAGE__
+		// page-data script injected by Pages.Render.
+		h.Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'")
 		if s.Production {
 			h.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		}
@@ -116,6 +119,21 @@ func (s *Server) recoverer(next http.Handler) http.Handler {
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// maxBodyBytes caps request bodies on state-changing methods.
+const maxBodyBytes = 1 << 20
+
+// limitBody caps POST/PATCH/PUT/DELETE bodies at 1 MiB; readers past the cap
+// get a *http.MaxBytesError, which writeParamsError turns into a 413.
+func (s *Server) limitBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete:
+			r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		}
 		next.ServeHTTP(w, r)
 	})
 }
