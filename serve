@@ -13,7 +13,7 @@ SESSION=rulinky
 # shellcheck source=/dev/null
 . "$HOME/c/server/serve-in-place.sh"
 # vendor/ is tracked (Rails), so go must not treat it as a Go vendor directory.
-export GOFLAGS=-mod=mod
+export GOFLAGS=-mod=readonly
 
 echo "==> pnpm install";   pnpm install --frozen-lockfile
 echo "==> pnpm run build"; pnpm run build
