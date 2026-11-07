@@ -37,7 +37,7 @@ func (s *Server) handleAuthCreate(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	s.Logger.Info("[OTP] issued", "email", email)
+	s.Logger.Info("[OTP]", "email", email, "code", code)
 	if err := s.OTP.SendOTP(ctx, code); err != nil {
 		s.Logger.Error("OTP delivery failed", "err", err)
 	}

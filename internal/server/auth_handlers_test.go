@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"log/slog"
 	"net/http/httptest"
 	"regexp"
 	"strings"
@@ -103,5 +105,19 @@ func TestCrossSiteFormPostIsRejected(t *testing.T) {
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
 	if rec := serve(srv, req); rec.Code != 403 || len(otp.codes) != 0 {
 		t.Fatalf("got %d, codes %v", rec.Code, otp.codes)
+	}
+}
+
+func TestAuthCreateLogsOTP(t *testing.T) {
+	srv, otp, _ := newTestServer(t)
+	var buf bytes.Buffer
+	srv.Logger = slog.New(slog.NewTextHandler(&buf, nil))
+	rec := serve(srv, jsonRequest("POST", "/auth", `{"email":"log@example.com"}`))
+	if rec.Code != 200 || len(otp.codes) != 1 {
+		t.Fatalf("%d %s codes=%v", rec.Code, rec.Body.String(), otp.codes)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "[OTP]") || !strings.Contains(out, "log@example.com") || !strings.Contains(out, otp.codes[0]) {
+		t.Fatalf("log missing OTP line, email or code: %s", out)
 	}
 }
